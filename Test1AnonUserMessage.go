@@ -10,9 +10,9 @@ import (
 	"testing"
 )
 
-const testLoginUserId = 103
+func Test1AnonUserMessage(t *testing.T) {
+	userId := test1LoginUserId
 
-func TestLogin(t *testing.T) {
 	authUrl := escapeTelegramString(fmt.Sprintf(
 		`%s/oauth?response_type=code&client_id=%d&redirect_uri=%s&state=`,
 		config.kneuBaseUrl,
@@ -31,36 +31,33 @@ func TestLogin(t *testing.T) {
 	}
 
 	sendMessageMock := mocha.Post(expect.URLPath("/sendMessage")).
+		Repeat(1).
 		Body(
-			expectChatId(testLoginUserId),
-			expect.JSONPath("parse_mode", expect.ToEqual("MarkdownV2")),
-			expect.JSONPath("text", expect.ToContain(authUrl)),
-			expect.JSONPath("text", expect.ToMatchExpr(authUrlRegexp)),
+			expectMarkdownV2, expectChatId(userId),
+			expect.JSONPath("text", expect.ToContain(authUrl)), expect.JSONPath("text", expect.ToMatchExpr(authUrlRegexp)),
 		).
-		Reply(reply.OK())
+		Reply(
+			reply.OK().BodyJSON(getSendMessageSuccessResponse()),
+		)
 
 	sendMessageMockScope := mocks.TelegramMockServer.mocha.AddMocks(sendMessageMock)
 	defer sendMessageMockScope.Clean()
 
-	captureFailedMock := mocha.Post(expect.URLPath("/sendMessage")).
-		Body(expectChatId(testLoginUserId)).
-		ReplyFunction(DumpRequest)
-
-	captureFailedMockScope := mocks.TelegramMockServer.mocha.AddMocks(captureFailedMock)
-	defer captureFailedMockScope.Clean()
+	captureNotMatchedScope := captureNotMatchedSendMessage(userId)
+	defer captureNotMatchedScope.Clean()
 
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
 		ID: 12344,
 		Message: &Message{
 			ID: 12344,
 			Sender: &User{
-				ID:       testLoginUserId,
+				ID:       int64(userId),
 				Username: "testUser1",
 			},
-			Text: "/start",
+			Text: "/list",
 		},
 	})
 
 	sendMessageMockScope.AssertCalled(t)
-	captureFailedMockScope.AssertNotCalled(t)
+	captureNotMatchedScope.AssertNotCalled(t)
 }

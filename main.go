@@ -10,6 +10,8 @@ var mocks *Mocks
 
 var config Config
 
+var fakeMatchString = func(pat, str string) (bool, error) { return true, nil }
+
 func main() {
 	var err error
 	// Empty main function
@@ -29,7 +31,7 @@ func main() {
 			}
 
 			fmt.Println("App is started. Start testing..")
-			t.Run("TestLogin", TestLogin)
+			setupTests(t)
 		},
 	}
 

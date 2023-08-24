@@ -21,6 +21,7 @@ type Config struct {
 	kneuClientSecret      string
 	publicUrl             string
 	skipWait              bool
+	debugUpdates          bool
 }
 
 func loadConfig(envFilename string) (Config, error) {
@@ -58,6 +59,7 @@ func loadConfig(envFilename string) (Config, error) {
 		kneuClientSecret:      os.Getenv("KNEU_CLIENT_SECRET"),
 		publicUrl:             os.Getenv("PUBLIC_URL"),
 		skipWait:              os.Getenv("SKIP_WAIT") == "true",
+		debugUpdates:          os.Getenv("DEBUG_UPDATES") == "true",
 	}
 
 	if loadedConfig.kafkaHost == "" {

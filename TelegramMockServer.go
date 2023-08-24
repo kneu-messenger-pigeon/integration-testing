@@ -90,7 +90,10 @@ func (mockServer *TelegramMockServer) telegramGetUpdatesHandler(r *http.Request,
 		Build(r, m, p)
 
 	updatesJSON, _ := json.Marshal(updates)
-	fmt.Println("send updates: " + string(updatesJSON))
+
+	if config.debugUpdates {
+		fmt.Println("send updates: " + string(updatesJSON))
+	}
 
 	return response, err
 }
