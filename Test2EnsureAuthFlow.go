@@ -1,9 +1,7 @@
 package main
 
 import (
-	"github.com/vitorsalgado/mocha/v3"
-	"github.com/vitorsalgado/mocha/v3/expect"
-	"github.com/vitorsalgado/mocha/v3/reply"
+	"github.com/stretchr/testify/assert"
 	"mvdan.cc/xurls/v2"
 	"testing"
 )
@@ -13,17 +11,9 @@ func Test2EnsureAuthFlow(t *testing.T) {
 
 	catchText := &CatchMessageTextPostAction{}
 
-	sendMessageMock := mocha.Post(expect.URLPath("/sendMessage")).
-		Repeat(1).
-		Body(
-			expectMarkdownV2, expectChatId(userId),
-			expect.JSONPath("text", expect.ToContain("авториз")),
-			expect.JSONPath("text", expect.ToContain(`redirect_uri`)),
-		).
-		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
-		PostAction(catchText)
+	sendAuthorizationMessageMock := expectAuthorizationMessage(userId).PostAction(catchText)
 
-	sendMessageMockScope := mocks.TelegramMockServer.mocha.AddMocks(sendMessageMock)
+	sendMessageMockScope := mocks.TelegramMockServer.mocha.AddMocks(sendAuthorizationMessageMock)
 	defer sendMessageMockScope.Clean()
 
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
@@ -41,6 +31,9 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	sendMessageMockScope.AssertCalled(t)
 	sendMessageMockScope.Clean()
 
+	sendWelcomeMessageMock := expectWelcomeMessage(userId).PostAction(catchText)
+	sendWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendWelcomeMessageMock)
+
 	captureNotMatchedScope := captureNotMatchedSendMessage(userId)
 	defer captureNotMatchedScope.Clean()
 
@@ -48,5 +41,8 @@ func Test2EnsureAuthFlow(t *testing.T) {
 
 	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl)
 
+	sendWelcomeMessageScope.AssertCalled(t)
 	captureNotMatchedScope.AssertNotCalled(t)
+
+	assert.Equal(t, "Пане Петр, відтепер Ви будете отримувати сповіщення про нові оцінки!", catchText.Text)
 }

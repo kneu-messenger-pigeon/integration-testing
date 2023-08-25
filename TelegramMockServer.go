@@ -8,6 +8,7 @@ import (
 	"github.com/vitorsalgado/mocha/v3/params"
 	"github.com/vitorsalgado/mocha/v3/reply"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -16,10 +17,12 @@ import (
 )
 
 type TelegramMockServer struct {
-	mocha        *mocha.Mocha
-	updates      chan TelegramUpdate
-	scopedGetMe  *mocha.Scoped
-	lastUpdateId uint32
+	mocha         *mocha.Mocha
+	updates       chan TelegramUpdate
+	scopedGetMe   *mocha.Scoped
+	lastUpdateId  uint32
+	authUrl       string
+	authUrlRegexp *regexp.Regexp
 }
 
 func CreateTelegramMockServer(t *testing.T, token string) *TelegramMockServer {
@@ -63,6 +66,8 @@ func CreateTelegramMockServer(t *testing.T, token string) *TelegramMockServer {
 	telegramMockServer.scopedGetMe = telegramMockServer.mocha.AddMocks(getMeMock)
 
 	telegramMockServer.mocha.Start()
+
+	initTelegramHelpers(telegramMockServer)
 
 	return telegramMockServer
 }

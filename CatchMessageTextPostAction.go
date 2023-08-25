@@ -22,7 +22,7 @@ func (c *CatchMessageTextPostAction) Run(args mocha.PostActionArgs) error {
 		if !ok {
 			err = errors.New("Request has not text field")
 		} else {
-			c.Text = text
+			c.Text = unescapeTelegramString(text)
 		}
 	}
 

@@ -84,7 +84,7 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 	atomic.AddUint32(&mockServer.lastCodeIndex, 1)
 	code := "testCode" + strconv.Itoa(int(mockServer.lastCodeIndex))
 	accessToken := "testAccessToken" + strconv.Itoa(int(mockServer.lastCodeIndex))
-	fmt.Println(accessToken)
+
 	redirectUriQuery := redirectUri.Query()
 	redirectUriQuery.Set("code", code)
 	redirectUriQuery.Set("state", state)
@@ -130,7 +130,16 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 
 	fmt.Println("emulate success auth redirect to:", redirectUri.String())
 
-	response, err := http.Get(redirectUri.String())
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if req.URL.Hostname() != redirectUri.Hostname() { // stop after outside redirect
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
+
+	response, err := client.Get(redirectUri.String())
 	if err != nil {
 		t.Errorf("navigate to redirectUri error: %v\n", err)
 		return
@@ -138,7 +147,8 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 
 	authorizerClientRequestsScope.AssertCalled(t)
 
-	assert.Equal(t, 200, response.StatusCode, "response status code is not 200")
+	assert.Equal(t, 302, response.StatusCode, "response status code is not 302")
+	assert.Equal(t, "https://t.me/test?start", response.Header.Get("Location"), "unexpected redirect location")
 
 	time.Sleep(time.Second * 3)
 }
