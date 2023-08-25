@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -15,7 +16,12 @@ var fakeMatchString = func(pat, str string) (bool, error) { return true, nil }
 func main() {
 	var err error
 	// Empty main function
-	config, err = loadConfig(".env")
+	envFilename := ""
+	if _, err := os.Stat(".env"); err == nil {
+		envFilename = ".env"
+	}
+
+	config, err = loadConfig(envFilename)
 	if err != nil {
 		log.Fatalln(err)
 	}
