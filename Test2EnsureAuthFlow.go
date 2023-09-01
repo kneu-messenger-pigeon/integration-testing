@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
@@ -112,6 +113,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	catchMessage.Text = strings.Trim(catchMessage.Text, " \n")
 	lines := strings.Split(catchMessage.Text, "\n")
 
+	fmt.Println(catchMessage.Text)
 	if !assert.GreaterOrEqual(t, len(lines), 5) {
 		return
 	}

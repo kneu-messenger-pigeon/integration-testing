@@ -80,7 +80,7 @@ func (mockServer *TelegramMockServer) telegramGetUpdatesHandler(r *http.Request,
 		updates = append(updates, update)
 
 		go func() {
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			update.SendDoneChan <- true
 		}()
 
