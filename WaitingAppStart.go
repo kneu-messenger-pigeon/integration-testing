@@ -16,7 +16,6 @@ func WaitSecondaryDbScoreProcessedEvent() {
 	reader := kafka.NewReader(
 		kafka.ReaderConfig{
 			Brokers:     []string{config.kafkaHost},
-			GroupID:     "integration-testing",
 			Topic:       events.MetaEventsTopic,
 			MinBytes:    10,
 			MaxBytes:    10e3,
@@ -28,7 +27,7 @@ func WaitSecondaryDbScoreProcessedEvent() {
 			},
 		},
 	)
-
+	defer reader.Close()
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelFunc()
 

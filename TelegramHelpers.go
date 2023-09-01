@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 var sendMessageLastId = 100
@@ -43,6 +44,39 @@ func getSendMessageSuccessResponse() map[string]interface{} {
 			"message_id": sendMessageLastId,
 		},
 	}
+}
+
+func logoutUser(chatId int) {
+	catchMessage := &CatchMessagePostAction{}
+
+	sendMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
+		mocha.Post(expect.URLPath("/sendMessage")).
+			Body(expectMarkdownV2, expectChatId(chatId)).
+			Repeat(1).
+			Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+			PostAction(catchMessage),
+	)
+	defer sendMessageScope.Clean()
+
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Message: &Message{
+			ID: 12344,
+			Sender: &User{
+				ID:       int64(chatId),
+				Username: "test",
+			},
+			Text: "/reset",
+		},
+	})
+
+	waitUntilCalled(sendMessageScope, 5*time.Second)
+
+	if len(catchMessage.Text) > 100 {
+		catchMessage.Text = catchMessage.Text[0:100]
+	}
+
+	fmt.Println("logoutUser: ", catchMessage.Text)
 }
 
 func expectChatId(chatId int) expect.Matcher {

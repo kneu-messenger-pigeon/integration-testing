@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
@@ -29,6 +28,8 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		Username: "testUser2",
 	}
 
+	logoutUser(userId)
+
 	catchMessage := &CatchMessagePostAction{}
 
 	expectAuthorizationMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
@@ -48,21 +49,19 @@ func Test2EnsureAuthFlow(t *testing.T) {
 
 	// 2. expect Welcome anon message with Authorization link
 	expectAuthorizationMessageScope.AssertCalled(t)
-	expectAuthorizationMessageScope.Disable()
 	expectAuthorizationMessageScope.Clean()
 
+	authUrl := xurls.Relaxed().FindString(catchMessage.Text)
+
+	catchMessage.Reset()
 	expectWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
 		expectWelcomeMessage(userId).PostAction(catchMessage),
 	)
 
 	// 3. go to auth url and finish auth
-	authUrl := xurls.Relaxed().FindString(catchMessage.Text)
 	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl, fakeUser)
 
-	timeout := time.Now().Add(5 * time.Second)
-	for expectWelcomeMessageScope.IsPending() && time.Now().Before(timeout) {
-		time.Sleep(time.Millisecond * 200)
-	}
+	waitUntilCalled(expectWelcomeMessageScope, 5*time.Second)
 
 	// 4. expect Welcome message with success
 	expectWelcomeMessageScope.AssertCalled(t)
@@ -80,16 +79,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(userId),
-			expect.JSONPath("text", expect.ToHavePrefix("Пані "+fakeUser.FirstName+", Ваша загальна успішність у навчанні")),
-			expect.JSONPath("text", expect.ToContain("Системи управління знаннями\n     *результат 24*, _рейтинг \\#3/3_\n")),
-			expect.JSONPath(
-				"reply_markup",
-				expectJsonPayload(
-					expect.AllOf(
-						expect.JSONPath("inline_keyboard.[0][0].text", expect.ToEqual("Системи управління знаннями")),
-					),
-				),
-			),
+			expect.JSONPath("text", expect.ToContain("Ваша загальна успішність у навчанні")),
 		).
 		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
 		PostAction(catchMessage)
@@ -113,15 +103,21 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	catchMessage.Text = strings.Trim(catchMessage.Text, " \n")
 	lines := strings.Split(catchMessage.Text, "\n")
 
-	fmt.Println(catchMessage.Text)
 	if !assert.GreaterOrEqual(t, len(lines), 5) {
 		return
 	}
+
+	assert.Equal(t, "Пані "+fakeUser.FirstName+", Ваша загальна успішність у навчанні:", lines[0])
+
+	assert.Equal(t, lines[3], "1. Системи управління знаннями")
+	assert.Equal(t, lines[4], "     *результат 24*, _рейтинг #3/3_")
 
 	assert.Equal(t, "Вимкнути бот - /reset", lines[len(lines)-5])
 	assert.Equal(t, "❗Увага❗", lines[len(lines)-3])
 	assert.Equal(t, "Перевіряйте оцінки в [офіційному журналі успішності КНЕУ](https://cutt.ly/Dekanat)", lines[len(lines)-2])
 	assert.Equal(t, "Цей Бот не є офіційним джерелом даних про успішність.", lines[len(lines)-1])
+
+	assert.Equal(t, "Системи управління знаннями", catchMessage.GetInlineButton(0).Text)
 
 	// 7. press discipline button
 	firstButton := catchMessage.GetInlineButton(0)
@@ -190,10 +186,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		},
 	})
 
-	timeout = time.Now().Add(2 * time.Second)
-	for sendMessageNotificationStoppedScope.IsPending() && time.Now().Before(timeout) {
-		time.Sleep(time.Millisecond * 200)
-	}
+	waitUntilCalled(sendMessageNotificationStoppedScope, 5*time.Second)
 
 	sendMessageNotificationStoppedScope.AssertCalled(t)
 
