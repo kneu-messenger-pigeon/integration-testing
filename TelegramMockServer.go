@@ -104,8 +104,6 @@ func (mockServer *TelegramMockServer) telegramGetUpdatesHandler(r *http.Request,
 }
 
 func (mockServer *TelegramMockServer) telegramGetMeHandler(r *http.Request, m reply.M, p params.P) (*reply.Response, error) {
-	fmt.Println("sadadsads 123 adsadsads")
-
 	response, err := reply.OK().
 		BodyJSON(map[string]interface{}{
 			"ok": true,
@@ -127,21 +125,42 @@ func (mockServer *TelegramMockServer) Close() {
 
 func (mockServer *TelegramMockServer) SendUpdate(update TelegramUpdate) <-chan bool {
 	if update.Message != nil {
-		if update.Message.Chat == nil {
-			update.Message.Chat = &Chat{}
+		mockServer.prepareMessage(update.Message)
+	}
+
+	if update.Callback != nil {
+		if update.Callback.Message == nil {
+			update.Callback.Message = &Message{
+				ID:       12900,
+				Sender:   update.Callback.Sender,
+				Unixtime: time.Now().Unix(),
+			}
 		}
 
-		if update.Message.Chat.ID == 0 && update.Message.Sender != nil {
-			update.Message.Chat.ID = update.Message.Sender.ID
-		}
-		if update.Message.Chat.Type == "" {
-			update.Message.Chat.Type = ChatPrivate
+		mockServer.prepareMessage(update.Callback.Message)
+
+		if update.Callback.MessageID == "" {
+			update.Callback.MessageID = strconv.Itoa(update.Callback.Message.ID)
 		}
 	}
 
 	update.SendDoneChan = make(chan bool, 1)
 	mockServer.updates <- update
 	return update.SendDoneChan
+}
+
+func (mockServer *TelegramMockServer) prepareMessage(message *Message) {
+	if message.Chat == nil {
+		message.Chat = &Chat{}
+	}
+
+	if message.Chat.ID == 0 && message.Sender != nil {
+		message.Chat.ID = message.Sender.ID
+	}
+
+	if message.Chat.Type == "" {
+		message.Chat.Type = ChatPrivate
+	}
 }
 
 func (mockServer *TelegramMockServer) SendMessage(message *Message) {

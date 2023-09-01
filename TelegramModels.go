@@ -138,12 +138,9 @@ type InlineButton struct {
 	//
 	// It will be used as a callback endpoint.
 	Unique string `json:"unique,omitempty"`
-
-	Text            string `json:"text"`
-	URL             string `json:"url,omitempty"`
-	Data            string `json:"callback_data,omitempty"`
-	InlineQuery     string `json:"switch_inline_query,omitempty"`
-	InlineQueryChat string `json:"switch_inline_query_current_chat"`
+	Text   string `json:"text"`
+	URL    string `json:"url,omitempty"`
+	Data   string `json:"callback_data,omitempty"`
 }
 
 type ReplyButton struct {

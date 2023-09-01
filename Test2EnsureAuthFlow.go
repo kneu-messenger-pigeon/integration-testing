@@ -2,47 +2,212 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/vitorsalgado/mocha/v3"
+	"github.com/vitorsalgado/mocha/v3/expect"
+	"github.com/vitorsalgado/mocha/v3/reply"
 	"mvdan.cc/xurls/v2"
+	"strings"
 	"testing"
+	"time"
 )
 
 func Test2EnsureAuthFlow(t *testing.T) {
 	userId := test2AuthFlowUserId
+	fakeUser := FakeUser{
+		Id:         220,
+		StudentId:  113508,
+		GroupId:    16880,
+		LastName:   "Степанченко",
+		FirstName:  "Ірина",
+		MiddleName: "Володимирівна",
+		Gender:     "female",
+	}
 
-	catchText := &CatchMessageTextPostAction{}
+	sender := &User{
+		ID:       int64(userId),
+		Username: "testUser2",
+	}
 
-	sendAuthorizationMessageMock := expectAuthorizationMessage(userId).PostAction(catchText)
+	catchMessage := &CatchMessagePostAction{}
 
-	sendMessageMockScope := mocks.TelegramMockServer.mocha.AddMocks(sendAuthorizationMessageMock)
-	defer sendMessageMockScope.Clean()
+	expectAuthorizationMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
+		expectAuthorizationMessage(userId).PostAction(catchMessage),
+	)
+	defer expectAuthorizationMessageScope.Clean()
 
+	// 1. Send message to the bot
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
 		ID: 12344,
 		Message: &Message{
-			ID: 12344,
-			Sender: &User{
-				ID:       int64(userId),
-				Username: "testUser2",
-			},
-			Text: "/start",
+			ID:     12344,
+			Sender: sender,
+			Text:   "/start",
 		},
 	})
 
-	sendMessageMockScope.AssertCalled(t)
-	sendMessageMockScope.Clean()
+	// 2. expect Welcome anon message with Authorization link
+	expectAuthorizationMessageScope.AssertCalled(t)
+	expectAuthorizationMessageScope.Disable()
+	expectAuthorizationMessageScope.Clean()
 
-	sendWelcomeMessageMock := expectWelcomeMessage(userId).PostAction(catchText)
-	sendWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendWelcomeMessageMock)
+	expectWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
+		expectWelcomeMessage(userId).PostAction(catchMessage),
+	)
 
-	captureNotMatchedScope := captureNotMatchedSendMessage(userId)
-	defer captureNotMatchedScope.Clean()
+	// 3. go to auth url and finish auth
+	authUrl := xurls.Relaxed().FindString(catchMessage.Text)
+	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl, fakeUser)
 
-	authUrl := xurls.Relaxed().FindString(catchText.Text)
+	timeout := time.Now().Add(5 * time.Second)
+	for expectWelcomeMessageScope.IsPending() && time.Now().Before(timeout) {
+		time.Sleep(time.Millisecond * 200)
+	}
 
-	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl)
+	// 4. expect Welcome message with success
+	expectWelcomeMessageScope.AssertCalled(t)
 
-	sendWelcomeMessageScope.AssertCalled(t)
-	captureNotMatchedScope.AssertNotCalled(t)
+	ok := assert.Equal(t, "Пані "+fakeUser.FirstName+", відтепер Ви будете отримувати сповіщення про нові оцінки!", catchMessage.Text)
+	if !ok {
+		return
+	}
 
-	assert.Equal(t, "Пане Петр, відтепер Ви будете отримувати сповіщення про нові оцінки!", catchText.Text)
+	expectWelcomeMessageScope.Clean()
+	/*	*/
+
+	catchMessage.Reset()
+	sendDisciplinesListMessageMock := mocha.Post(expect.URLPath("/sendMessage")).
+		Repeat(1).
+		Body(
+			expectMarkdownV2, expectChatId(userId),
+			expect.JSONPath("text", expect.ToHavePrefix("Пані "+fakeUser.FirstName+", Ваша загальна успішність у навчанні")),
+			expect.JSONPath("text", expect.ToContain("Системи управління знаннями\n     *результат 24*, _рейтинг \\#3/3_\n")),
+			expect.JSONPath(
+				"reply_markup",
+				expectJsonPayload(
+					expect.AllOf(
+						expect.JSONPath("inline_keyboard.[0][0].text", expect.ToEqual("Системи управління знаннями")),
+					),
+				),
+			),
+		).
+		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+		PostAction(catchMessage)
+
+	sendDisciplinesListMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesListMessageMock)
+
+	// 5. list command
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Message: &Message{
+			ID:     12344,
+			Sender: sender,
+			Text:   "/list",
+		},
+	})
+
+	// 6. expect a discipline list message
+	sendDisciplinesListMessageScope.AssertCalled(t)
+	sendDisciplinesListMessageScope.Clean()
+
+	catchMessage.Text = strings.Trim(catchMessage.Text, " \n")
+	lines := strings.Split(catchMessage.Text, "\n")
+
+	if !assert.GreaterOrEqual(t, len(lines), 5) {
+		return
+	}
+
+	assert.Equal(t, "Вимкнути бот - /reset", lines[len(lines)-5])
+	assert.Equal(t, "❗Увага❗", lines[len(lines)-3])
+	assert.Equal(t, "Перевіряйте оцінки в [офіційному журналі успішності КНЕУ](https://cutt.ly/Dekanat)", lines[len(lines)-2])
+	assert.Equal(t, "Цей Бот не є офіційним джерелом даних про успішність.", lines[len(lines)-1])
+
+	// 7. press discipline button
+	firstButton := catchMessage.GetInlineButton(0)
+	assert.NotNil(t, firstButton)
+	assert.Equal(t, "Системи управління знаннями", firstButton.Text)
+
+	// 8. expect discipline score
+	catchMessage.Reset()
+	sendDisciplinesScoresMessageMock := mocha.Post(expect.URLPath("/sendMessage")).
+		Repeat(1).
+		Body(
+			expectMarkdownV2, expectChatId(userId),
+			expect.JSONPath("text", expect.ToHavePrefix("*Системи управління знаннями*")),
+		).
+		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+		PostAction(catchMessage)
+
+	sendDisciplinesScoresMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesScoresMessageMock)
+
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Callback: &Callback{
+			ID:     "12356",
+			Sender: sender,
+			Data:   firstButton.Data,
+		},
+	})
+
+	sendDisciplinesScoresMessageScope.AssertCalled(t)
+
+	// 8. expect discipline score
+	lines = strings.Split(catchMessage.Text, "\n")
+
+	if !assert.GreaterOrEqual(t, len(lines), 6) {
+		return
+	}
+	assert.Equal(t, "*Системи управління знаннями*: 24", lines[0])
+	assert.Equal(t, "рейтинг #3/3", lines[1])
+	assert.Equal(t, "", lines[2])
+	assert.Equal(t, "Загалом по групі: max 32, min 24", lines[3])
+	assert.Equal(t, "", lines[4])
+	assert.Equal(t, "03.07.2023 *24* _Лабораторна роб._", lines[5])
+
+	assert.Equal(t, "Назад", catchMessage.GetInlineButton(0).Text)
+
+	catchMessage.Reset()
+
+	sendMessageNotificationStoppedScope := mocks.TelegramMockServer.mocha.AddMocks(
+		mocha.Post(expect.URLPath("/sendMessage")).
+			Repeat(1).
+			Body(
+				expectMarkdownV2, expectChatId(userId),
+				expect.JSONPath("text", expect.ToHavePrefix("Відтепер надсилання сповіщень зупинено")),
+			).
+			Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+			PostAction(catchMessage),
+	)
+
+	// 9. reset command
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Message: &Message{
+			ID:     12344,
+			Sender: sender,
+			Text:   "/reset",
+		},
+	})
+
+	timeout = time.Now().Add(2 * time.Second)
+	for sendMessageNotificationStoppedScope.IsPending() && time.Now().Before(timeout) {
+		time.Sleep(time.Millisecond * 200)
+	}
+
+	sendMessageNotificationStoppedScope.AssertCalled(t)
+
+	expectAuthorizationMessageAfterResetScope := mocks.TelegramMockServer.mocha.AddMocks(expectAuthorizationMessage(userId))
+	defer expectAuthorizationMessageAfterResetScope.Clean()
+
+	// 11. press discipline button
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Callback: &Callback{
+			ID:     "12356",
+			Sender: sender,
+			Data:   firstButton.Data,
+		},
+	})
+
+	// 12. expect Welcome anon message
+	expectAuthorizationMessageAfterResetScope.AssertCalled(t)
 }

@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 type KneuAuthMockServer struct {
@@ -20,6 +19,16 @@ type KneuAuthMockServer struct {
 	updates       chan TelegramUpdate
 	lastUpdateId  uint32
 	lastCodeIndex uint32
+}
+
+type FakeUser struct {
+	Id         int
+	StudentId  int
+	GroupId    int
+	LastName   string
+	FirstName  string
+	MiddleName string
+	Gender     string
 }
 
 func CreateKneuAuthMockServer(t *testing.T, clientId int, clientSecret string) *KneuAuthMockServer {
@@ -40,23 +49,32 @@ func (mockServer *KneuAuthMockServer) Close() {
 	_ = mockServer.mocha.Close()
 }
 
-func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlString string) {
+func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlString string, fakeUser FakeUser) {
+	if authUrlString == "" {
+		t.Errorf("authUrlString is empty")
+		t.FailNow()
+		return
+	}
+
 	authUrlString = strings.ReplaceAll(authUrlString, "\\", "")
 
 	authUrl, err := url.Parse(authUrlString)
 
 	if err != nil || authUrl == nil {
 		t.Errorf("parse auth authUrl error: %v\n", err)
+		t.FailNow()
 		return
 	}
 
 	if !strings.HasPrefix(authUrlString, config.kneuBaseUrl) {
 		t.Errorf("auth authUrl does not start with kneuBaseUrl: " + authUrlString)
+		t.FailNow()
 		return
 	}
 
 	if authUrl.Query().Get("response_type") != "code" {
 		t.Errorf("response_type is not code in auth authUrl: " + authUrlString)
+		t.FailNow()
 		return
 	}
 
@@ -65,11 +83,13 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 
 	if origRedirectUriString == "" {
 		t.Errorf("redirect_uri is empty in auth authUrl: " + authUrlString)
+		t.FailNow()
 		return
 	}
 
 	if state == "" {
 		t.Errorf("state is empty in auth authUrl: " + authUrlString)
+		t.FailNow()
 		return
 	}
 
@@ -78,6 +98,7 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 	redirectUri, err := authUrl.Parse(origRedirectUriString)
 	if err != nil || redirectUri == nil {
 		t.Errorf("parse redirectUri error: %v\n", err)
+		t.FailNow()
 		return
 	}
 
@@ -104,7 +125,7 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 					"access_token": accessToken,
 					"token_type":   "Bearer",
 					"expires_in":   7200,
-					"user_id":      999,
+					"user_id":      fakeUser.Id,
 				}),
 			),
 
@@ -113,16 +134,16 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 			Header("Authorization", expect.ToEqual("Bearer "+accessToken)).
 			Reply(
 				reply.OK().BodyJSON(map[string]interface{}{
-					"id":          999,
-					"group_id":    50,
-					"last_name":   "Петренко",
-					"first_name":  "Петр",
-					"middle_name": "Петрович",
-					"name":        "Петренко Петр Петрович",
-					"email":       "test@example.com",
+					"id":          fakeUser.Id,
+					"group_id":    fakeUser.GroupId,
+					"student_id":  fakeUser.StudentId,
+					"last_name":   fakeUser.LastName,
+					"first_name":  fakeUser.FirstName,
+					"middle_name": fakeUser.MiddleName,
+					"name":        fakeUser.LastName + " " + fakeUser.FirstName + " " + fakeUser.MiddleName,
+					"gender":      fakeUser.Gender,
+					"email":       "user" + strconv.Itoa(fakeUser.Id) + "@example.com",
 					"type":        "student",
-					"gender":      "male",
-					"student_id":  123,
 				}),
 			),
 	)
@@ -150,5 +171,5 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 	assert.Equal(t, 302, response.StatusCode, "response status code is not 302")
 	assert.Equal(t, "https://t.me/test?start", response.Header.Get("Location"), "unexpected redirect location")
 
-	time.Sleep(time.Second * 3)
+	//	time.Sleep(time.Second * 5)
 }
