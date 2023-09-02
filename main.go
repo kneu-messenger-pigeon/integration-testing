@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 var mocks *Mocks
@@ -34,6 +35,8 @@ func main() {
 			if !config.skipWait {
 				WaitTelegramAppStarted()
 				WaitSecondaryDbScoreProcessedEvent()
+				WaitScoreChangedEvent()
+				time.Sleep(10 * time.Second)
 			}
 
 			fmt.Println("App is started. Start testing..")

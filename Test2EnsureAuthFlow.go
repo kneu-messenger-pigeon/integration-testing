@@ -117,11 +117,11 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	assert.Equal(t, "Перевіряйте оцінки в [офіційному журналі успішності КНЕУ](https://cutt.ly/Dekanat)", lines[len(lines)-2])
 	assert.Equal(t, "Цей Бот не є офіційним джерелом даних про успішність.", lines[len(lines)-1])
 
-	assert.Equal(t, "Системи управління знаннями", catchMessage.GetInlineButton(0).Text)
-
 	// 7. press discipline button
 	firstButton := catchMessage.GetInlineButton(0)
-	assert.NotNil(t, firstButton)
+	if !assert.NotNil(t, firstButton) {
+		return
+	}
 	assert.Equal(t, "Системи управління знаннями", firstButton.Text)
 
 	// 8. expect discipline score
@@ -161,6 +161,9 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	assert.Equal(t, "", lines[4])
 	assert.Equal(t, "03.07.2023 *24* _Лабораторна роб._", lines[5])
 
+	if !assert.NotNil(t, catchMessage.GetInlineButton(0)) {
+		return
+	}
 	assert.Equal(t, "Назад", catchMessage.GetInlineButton(0).Text)
 
 	catchMessage.Reset()

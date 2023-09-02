@@ -44,11 +44,7 @@ func (c *CatchMessagePostAction) Run(args mocha.PostActionArgs) error {
 }
 
 func (c *CatchMessagePostAction) GetInlineButton(index int) *InlineButton {
-	if c.ReplyMarkup == nil || len(c.ReplyMarkup.InlineKeyboard) == 0 || len(c.ReplyMarkup.InlineKeyboard[0]) == 0 {
-		return nil
-	}
-
-	if len(c.ReplyMarkup.InlineKeyboard[0]) <= index {
+	if c.ReplyMarkup == nil || len(c.ReplyMarkup.InlineKeyboard) == 0 || len(c.ReplyMarkup.InlineKeyboard[0]) <= index {
 		return nil
 	}
 
