@@ -1,19 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
-	"github.com/vitorsalgado/mocha/v3/reply"
-	"mvdan.cc/xurls/v2"
 	"strings"
 	"testing"
 	"time"
 )
 
 func Test2EnsureAuthFlow(t *testing.T) {
+	fmt.Println("Test2EnsureAuthFlow")
+
 	userId := test2AuthFlowUserId
-	fakeUser := FakeUser{
+	fakeUser := &FakeUser{
 		Id:         220,
 		StudentId:  113508,
 		GroupId:    16880,
@@ -28,60 +29,16 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		Username: "testUser2",
 	}
 
-	logoutUser(userId)
+	loginUser(t, userId, fakeUser, sender)
 
 	catchMessage := &CatchMessagePostAction{}
-
-	expectAuthorizationMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
-		expectAuthorizationMessage(userId).PostAction(catchMessage),
-	)
-	defer expectAuthorizationMessageScope.Clean()
-
-	// 1. Send message to the bot
-	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
-		ID: 12344,
-		Message: &Message{
-			ID:     12344,
-			Sender: sender,
-			Text:   "/start",
-		},
-	})
-
-	// 2. expect Welcome anon message with Authorization link
-	expectAuthorizationMessageScope.AssertCalled(t)
-	expectAuthorizationMessageScope.Clean()
-
-	authUrl := xurls.Relaxed().FindString(catchMessage.Text)
-
-	catchMessage.Reset()
-	expectWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
-		expectWelcomeMessage(userId).PostAction(catchMessage),
-	)
-
-	// 3. go to auth url and finish auth
-	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl, fakeUser)
-
-	waitUntilCalled(expectWelcomeMessageScope, 5*time.Second)
-
-	// 4. expect Welcome message with success
-	expectWelcomeMessageScope.AssertCalled(t)
-
-	ok := assert.Equal(t, "Пані "+fakeUser.FirstName+", відтепер Ви будете отримувати сповіщення про нові оцінки!", catchMessage.Text)
-	if !ok {
-		return
-	}
-
-	expectWelcomeMessageScope.Clean()
-	/*	*/
-
-	catchMessage.Reset()
 	sendDisciplinesListMessageMock := mocha.Post(expect.URLPath("/sendMessage")).
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(userId),
 			expect.JSONPath("text", expect.ToContain("Ваша загальна успішність у навчанні")),
 		).
-		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+		Reply(getSendMessageSuccessResponse()).
 		PostAction(catchMessage)
 
 	sendDisciplinesListMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesListMessageMock)
@@ -132,7 +89,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 			expectMarkdownV2, expectChatId(userId),
 			expect.JSONPath("text", expect.ToHavePrefix("*Системи управління знаннями*")),
 		).
-		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+		Reply(getSendMessageSuccessResponse()).
 		PostAction(catchMessage)
 
 	sendDisciplinesScoresMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesScoresMessageMock)
@@ -175,7 +132,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 				expectMarkdownV2, expectChatId(userId),
 				expect.JSONPath("text", expect.ToHavePrefix("Відтепер надсилання сповіщень зупинено")),
 			).
-			Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+			Reply(getSendMessageSuccessResponse()).
 			PostAction(catchMessage),
 	)
 

@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/vitorsalgado/mocha/v3/params"
-	"github.com/vitorsalgado/mocha/v3/reply"
+	"github.com/vitorsalgado/mocha/v3"
 	"io"
-	"net/http"
 )
 
-func DumpRequest(r *http.Request, m reply.M, p params.P) (*reply.Response, error) {
+type DumpRequestPostAction struct{}
+
+func (action *DumpRequestPostAction) Run(args mocha.PostActionArgs) error {
+	r := args.Request
 	fmt.Println("request received : " + r.RequestURI)
 
 	body, err := io.ReadAll(r.Body)
@@ -19,6 +20,7 @@ func DumpRequest(r *http.Request, m reply.M, p params.P) (*reply.Response, error
 	fmt.Printf("form: %s\n", r.Form)
 	fmt.Printf("body err %v\n", err)
 
-	response, _ := reply.OK().Build(r, m, p)
-	return response, nil
+	return nil
 }
+
+var DumpRequest = &DumpRequestPostAction{}

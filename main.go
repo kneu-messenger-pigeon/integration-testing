@@ -12,13 +12,13 @@ var mocks *Mocks
 
 var config Config
 
-var fakeMatchString = func(pat, str string) (bool, error) { return true, nil }
+var stubMatch = func(pat, str string) (bool, error) { return true, nil }
 
 func main() {
 	var err error
 	// Empty main function
 	envFilename := ""
-	if _, err := os.Stat(".env"); err == nil {
+	if _, err = os.Stat(".env"); err == nil {
 		envFilename = ".env"
 	}
 
@@ -36,18 +36,16 @@ func main() {
 				WaitTelegramAppStarted()
 				WaitSecondaryDbScoreProcessedEvent()
 				WaitScoreChangedEvent()
-				time.Sleep(10 * time.Second)
+
+				fmt.Printf("App is started. Wait %d seconds for app to be ready..\n", int(config.appStartDelay.Seconds()))
+				time.Sleep(config.appStartDelay)
 			}
 
-			fmt.Println("App is started. Start testing..")
+			fmt.Println("Start testing..")
 			setupTests(t)
+			fmt.Println("Test done")
 		},
 	}
 
-	testing.Main(
-		func(pat, str string) (bool, error) { return true, nil },
-		[]testing.InternalTest{test},
-		[]testing.InternalBenchmark{}, []testing.InternalExample{},
-	)
-
+	testing.Main(stubMatch, []testing.InternalTest{test}, []testing.InternalBenchmark{}, []testing.InternalExample{})
 }

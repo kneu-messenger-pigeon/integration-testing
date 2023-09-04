@@ -3,12 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
 	"github.com/vitorsalgado/mocha/v3/reply"
+	"mvdan.cc/xurls/v2"
 	"net/url"
 	"regexp"
 	"strconv"
+	"testing"
 	"time"
 )
 
@@ -36,14 +39,14 @@ func initTelegramHelpers(server *TelegramMockServer) {
 	}
 }
 
-func getSendMessageSuccessResponse() map[string]interface{} {
+func getSendMessageSuccessResponse() *reply.StdReply {
 	sendMessageLastId++
-	return map[string]interface{}{
+	return reply.OK().BodyJSON(map[string]interface{}{
 		"ok": true,
 		"result": map[string]interface{}{
 			"message_id": sendMessageLastId,
 		},
-	}
+	})
 }
 
 func logoutUser(chatId int) {
@@ -53,7 +56,7 @@ func logoutUser(chatId int) {
 		mocha.Post(expect.URLPath("/sendMessage")).
 			Body(expectMarkdownV2, expectChatId(chatId)).
 			Repeat(1).
-			Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse())).
+			Reply(getSendMessageSuccessResponse()).
 			PostAction(catchMessage),
 	)
 	defer sendMessageScope.Clean()
@@ -76,7 +79,54 @@ func logoutUser(chatId int) {
 		catchMessage.Text = catchMessage.Text[0:100]
 	}
 
-	fmt.Println("logoutUser: ", catchMessage.Text)
+	fmt.Println("logoutUser ", strconv.Itoa(chatId), " result: ", catchMessage.Text)
+}
+
+func loginUser(t *testing.T, chatId int, fakeUser *FakeUser, sender *User) {
+	logoutUser(chatId)
+
+	catchMessage := &CatchMessagePostAction{}
+
+	expectAuthorizationMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
+		expectAuthorizationMessage(chatId).PostAction(catchMessage),
+	)
+	defer expectAuthorizationMessageScope.Clean()
+
+	// 1. Send message to the bot
+	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
+		ID: 12344,
+		Message: &Message{
+			ID:     12344,
+			Sender: sender,
+			Text:   "/start",
+		},
+	})
+
+	// 2. expect Welcome anon message with Authorization link
+	expectAuthorizationMessageScope.AssertCalled(t)
+	expectAuthorizationMessageScope.Clean()
+
+	authUrl := xurls.Relaxed().FindString(catchMessage.Text)
+
+	catchMessage.Reset()
+	expectWelcomeMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
+		expectWelcomeMessage(chatId).PostAction(catchMessage),
+	)
+
+	// 3. go to auth url and finish auth
+	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl, fakeUser)
+
+	waitUntilCalled(expectWelcomeMessageScope, 5*time.Second)
+
+	// 4. expect Welcome message with success
+	expectWelcomeMessageScope.AssertCalled(t)
+	expectWelcomeMessageScope.Clean()
+
+	ok := assert.Equal(t, "Пані "+fakeUser.FirstName+", відтепер Ви будете отримувати сповіщення про нові оцінки!", catchMessage.Text)
+
+	if !ok {
+		t.FailNow()
+	}
 }
 
 func expectChatId(chatId int) expect.Matcher {
@@ -86,12 +136,20 @@ func expectChatId(chatId int) expect.Matcher {
 	)
 }
 
+func expectMessageId(messageId int) expect.Matcher {
+	return expect.JSONPath(
+		"message_id",
+		expect.ToEqual(strconv.Itoa(messageId)),
+	)
+}
+
 func captureNotMatchedSendMessage(chatId int) *mocha.Scoped {
 	return mocks.TelegramMockServer.mocha.AddMocks(
 		mocha.Post(expect.URLPath("/sendMessage")).
 			Body(expectChatId(chatId)).
 			Repeat(0).
-			ReplyFunction(DumpRequest),
+			Reply(getSendMessageSuccessResponse()).
+			PostAction(DumpRequest),
 	)
 }
 
@@ -104,7 +162,7 @@ func expectAuthorizationMessage(chatId int) *mocha.MockBuilder {
 			expect.JSONPath("text", expect.ToContain(mocks.TelegramMockServer.authUrl)),
 			expect.JSONPath("text", expect.ToMatchExpr(mocks.TelegramMockServer.authUrlRegexp)),
 		).
-		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse()))
+		Reply(getSendMessageSuccessResponse())
 }
 
 func expectWelcomeMessage(chatId int) *mocha.MockBuilder {
@@ -120,7 +178,7 @@ func expectWelcomeMessage(chatId int) *mocha.MockBuilder {
 				),
 			),
 		).
-		Reply(reply.OK().BodyJSON(getSendMessageSuccessResponse()))
+		Reply(getSendMessageSuccessResponse())
 }
 
 func expectJsonPayload(matcher expect.Matcher) expect.Matcher {

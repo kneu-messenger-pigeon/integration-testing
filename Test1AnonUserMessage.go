@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
 func Test1AnonUserMessage(t *testing.T) {
+	fmt.Println("Test1AnonUserMessage")
+
 	userId := test1LoginUserId
 
 	sendMessageMockScope := mocks.TelegramMockServer.mocha.AddMocks(expectAuthorizationMessage(userId))

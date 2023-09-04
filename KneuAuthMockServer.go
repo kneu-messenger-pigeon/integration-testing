@@ -49,7 +49,7 @@ func (mockServer *KneuAuthMockServer) Close() {
 	_ = mockServer.mocha.Close()
 }
 
-func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlString string, fakeUser FakeUser) {
+func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlString string, fakeUser *FakeUser) {
 	if authUrlString == "" {
 		t.Errorf("authUrlString is empty")
 		t.FailNow()

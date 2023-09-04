@@ -10,18 +10,21 @@ import (
 )
 
 type Config struct {
-	kafkaHost             string
-	kafkaTimeout          time.Duration
-	kafkaAttempts         int
-	primaryDekanatDbDSN   string
-	secondaryDekanatDbDSN string
-	telegramToken         string
-	kneuBaseUrl           string
-	kneuClientId          int
-	kneuClientSecret      string
-	publicUrl             string
-	skipWait              bool
-	debugUpdates          bool
+	kafkaHost                          string
+	kafkaTimeout                       time.Duration
+	kafkaAttempts                      int
+	primaryDekanatDbDSN                string
+	secondaryDekanatDbDSN              string
+	secondaryDbCheckInterval           time.Duration
+	telegramToken                      string
+	repeatScoreChangesTimeframeSeconds time.Duration
+	appStartDelay                      time.Duration
+	kneuBaseUrl                        string
+	kneuClientId                       int
+	kneuClientSecret                   string
+	publicUrl                          string
+	skipWait                           bool
+	debugUpdates                       bool
 }
 
 func loadConfig(envFilename string) (Config, error) {
@@ -47,19 +50,37 @@ func loadConfig(envFilename string) (Config, error) {
 		return Config{}, errors.New(fmt.Sprintf("Wrong KNEU client (%d) ID %s", kneuClientId, err))
 	}
 
+	secondaryDbCheckInterval, err := strconv.ParseInt(os.Getenv("SECONDARY_DB_CHECK_INTERVAL"), 10, 0)
+	if secondaryDbCheckInterval == 0 || err != nil {
+		secondaryDbCheckInterval = 10
+	}
+
+	appStartDelay, err := strconv.Atoi(os.Getenv("APP_START_DELAY"))
+	if appStartDelay == 0 || err != nil {
+		appStartDelay = 25
+	}
+
+	repeatScoreChangesTimeframeSeconds, err := strconv.Atoi(os.Getenv("TIMEFRAME_TO_COMBINE_REPEAT_SCORE_CHANGES"))
+	if repeatScoreChangesTimeframeSeconds == 0 || err != nil {
+		repeatScoreChangesTimeframeSeconds = 5
+	}
+
 	loadedConfig := Config{
-		kafkaHost:             os.Getenv("KAFKA_HOST"),
-		kafkaTimeout:          time.Second * time.Duration(kafkaTimeout),
-		kafkaAttempts:         kafkaAttempts,
-		primaryDekanatDbDSN:   os.Getenv("PRIMARY_DEKANAT_DB_DSN"),
-		secondaryDekanatDbDSN: os.Getenv("SECONDARY_DEKANAT_DB_DSN"),
-		telegramToken:         os.Getenv("TELEGRAM_TOKEN"),
-		kneuBaseUrl:           os.Getenv("KNEU_BASE_URI"),
-		kneuClientId:          kneuClientId,
-		kneuClientSecret:      os.Getenv("KNEU_CLIENT_SECRET"),
-		publicUrl:             os.Getenv("PUBLIC_URL"),
-		skipWait:              os.Getenv("SKIP_WAIT") == "true",
-		debugUpdates:          os.Getenv("DEBUG_UPDATES") == "true",
+		kafkaHost:                          os.Getenv("KAFKA_HOST"),
+		kafkaTimeout:                       time.Second * time.Duration(kafkaTimeout),
+		kafkaAttempts:                      kafkaAttempts,
+		primaryDekanatDbDSN:                os.Getenv("PRIMARY_DEKANAT_DB_DSN"),
+		secondaryDekanatDbDSN:              os.Getenv("SECONDARY_DEKANAT_DB_DSN"),
+		secondaryDbCheckInterval:           time.Second * time.Duration(secondaryDbCheckInterval),
+		telegramToken:                      os.Getenv("TELEGRAM_TOKEN"),
+		repeatScoreChangesTimeframeSeconds: time.Second * time.Duration(repeatScoreChangesTimeframeSeconds),
+		appStartDelay:                      time.Second * time.Duration(appStartDelay),
+		kneuBaseUrl:                        os.Getenv("KNEU_BASE_URI"),
+		kneuClientId:                       kneuClientId,
+		kneuClientSecret:                   os.Getenv("KNEU_CLIENT_SECRET"),
+		publicUrl:                          os.Getenv("PUBLIC_URL"),
+		skipWait:                           os.Getenv("SKIP_WAIT") == "true",
+		debugUpdates:                       os.Getenv("DEBUG_UPDATES") == "true",
 	}
 
 	if loadedConfig.kafkaHost == "" {
