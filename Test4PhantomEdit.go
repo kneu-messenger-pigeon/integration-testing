@@ -65,7 +65,7 @@ func Test4PhantomEdit(t *testing.T) {
 	// it's optional call. Correct expected notification message could be received with `sendMessage` or `editMessageText`
 	expectEditScoreMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
 		mocha.Post(expect.URLPath("/editMessageText")).
-			Body(expectMarkdownV2, expectChatId(userId)).
+			Body(expectChatId(userId)). // no expectMarkdownV2, because could be error
 			Reply(getEditMessageSuccessResponse()).
 			PostAction(catchMessage),
 	)
@@ -94,7 +94,6 @@ func Test4PhantomEdit(t *testing.T) {
 		waitUntilCalled(expectEditScoreMessageScope, 10*time.Second)
 		expectEditScoreMessageScope.AssertCalled(t)
 	}
-	expectEditScoreMessageScope.Clean()
 
 	fmt.Println("catchMessage.Text", catchMessage.Text)
 	assert.Equal(t, expectedText, catchMessage.Text)
