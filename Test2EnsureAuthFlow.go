@@ -42,6 +42,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		PostAction(catchMessage)
 
 	sendDisciplinesListMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesListMessageMock)
+	defer sendDisciplinesListMessageScope.Clean()
 
 	// 5. list command
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
@@ -93,6 +94,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		PostAction(catchMessage)
 
 	sendDisciplinesScoresMessageScope := mocks.TelegramMockServer.mocha.AddMocks(sendDisciplinesScoresMessageMock)
+	defer sendDisciplinesScoresMessageScope.Clean()
 
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{
 		ID: 12344,
@@ -135,6 +137,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 			Reply(getSendMessageSuccessResponse()).
 			PostAction(catchMessage),
 	)
+	defer sendMessageNotificationStoppedScope.Clean()
 
 	// 9. reset command
 	<-mocks.TelegramMockServer.SendUpdate(TelegramUpdate{

@@ -4,13 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 )
 
 const dateFormat = "2006-01-02 15:04:05"
+
+const absentStringValue = "нб/нп"
+
+var absentString = absentStringValue
 
 type Lesson struct {
 	LessonId     int
@@ -112,10 +115,10 @@ func AddScore(t *testing.T, db *sql.DB, score Score) int {
 	lessonDate := lesson.LessonDate.Format(dateFormat)
 
 	// create new score
-	var isAbsent *bool
+	var absentValue *string
 	var scoreValue *int
 	if score.IsAbsent {
-		isAbsent = &score.IsAbsent
+		absentValue = &absentString
 	} else {
 		scoreValue = &score.Score
 	}
@@ -126,7 +129,7 @@ func AddScore(t *testing.T, db *sql.DB, score Score) int {
 		lesson.LessonId, score.LessonPart, lesson.GroupId, lesson.DisciplineId,
 		lesson.Semester,
 
-		scoreValue, isAbsent,
+		scoreValue, absentValue,
 		strconv.Itoa(lesson.LessonTypeId), strconv.Itoa(lesson.TeachId),
 		lesson.TeachUserId,
 	)
@@ -142,18 +145,61 @@ func AddScore(t *testing.T, db *sql.DB, score Score) int {
 	return scoreId
 }
 
-func UpdateDbDatetimeAndWait(t *testing.T, db *sql.DB, datetime time.Time) {
-	randomizedDateTime := datetime.Add(time.Second*10 + time.Duration(rand.Intn(300))*time.Second)
+func UpdateScore(t *testing.T, db *sql.DB, scoreId int, score int, isAbsent bool, datetime time.Time) {
+	var err error
+	var result sql.Result
 
-	result, err := db.Exec("UPDATE TSESS_LOG SET CON_DATA = ?", randomizedDateTime.Format(dateFormat))
+	// create new score
+	var argAbsent *string
+	var argScoreValue *int
+	if isAbsent {
+		argAbsent = &absentString
+	} else {
+		argScoreValue = &score
+	}
+
+	result, err = db.Exec(
+		"UPDATE T_EV_9 SET XR_1 = ?, XS10_4 = ?, REGDATE = ? WHERE ID = ?",
+		argScoreValue, argAbsent,
+		datetime.Format(dateFormat),
+		scoreId,
+	)
+	assert.NoError(t, err)
+
+	affected, err := result.RowsAffected()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, affected)
+}
+
+func DeleteScore(t *testing.T, db *sql.DB, scoreId int, datetime time.Time) {
+	var err error
+	var result sql.Result
+
+	result, err = db.Exec(
+		"UPDATE T_EV_9 SET XS10_5 = 'Ні', REGDATE = ? WHERE ID = ?",
+		datetime.Format(dateFormat), scoreId,
+	)
+	assert.NoError(t, err)
+
+	affected, err := result.RowsAffected()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, affected)
+}
+
+func UpdateDbDatetime(t *testing.T, db *sql.DB, datetime time.Time) {
+	result, err := db.Exec("UPDATE TSESS_LOG SET CON_DATA = ?", datetime.Format(dateFormat))
 	assert.NoError(t, err)
 	affected, err := result.RowsAffected()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, affected)
 
+}
+
+func UpdateDbDatetimeAndWait(t *testing.T, db *sql.DB, datetime time.Time) {
+	UpdateDbDatetime(t, db, datetime)
 	fmt.Printf(
-		"Done inserting new scores. Wait secondary db update interval - %d seconds\n",
-		int(config.secondaryDbCheckInterval.Seconds()),
+		"Done inserting new scores. Set DB time: %v, Wait secondary db update interval - %d seconds\n",
+		datetime, int(config.secondaryDbCheckInterval.Seconds()),
 	)
 	time.Sleep(config.secondaryDbCheckInterval)
 }

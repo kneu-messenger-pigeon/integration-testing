@@ -41,11 +41,21 @@ func initTelegramHelpers(server *TelegramMockServer) {
 
 func getSendMessageSuccessResponse() *reply.StdReply {
 	sendMessageLastId++
+	return getEditMessageSuccessResponse()
+}
+
+func getEditMessageSuccessResponse() *reply.StdReply {
 	return reply.OK().BodyJSON(map[string]interface{}{
 		"ok": true,
 		"result": map[string]interface{}{
 			"message_id": sendMessageLastId,
 		},
+	})
+}
+
+func getDeleteMessageSuccessResponse() *reply.StdReply {
+	return reply.OK().BodyJSON(map[string]interface{}{
+		"ok": true,
 	})
 }
 
@@ -116,7 +126,7 @@ func loginUser(t *testing.T, chatId int, fakeUser *FakeUser, sender *User) {
 	// 3. go to auth url and finish auth
 	mocks.KneuAuthMockServer.EmulateAuthFlow(t, authUrl, fakeUser)
 
-	waitUntilCalled(expectWelcomeMessageScope, 5*time.Second)
+	waitUntilCalled(expectWelcomeMessageScope, 10*time.Second)
 
 	// 4. expect Welcome message with success
 	expectWelcomeMessageScope.AssertCalled(t)

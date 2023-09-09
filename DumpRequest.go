@@ -20,6 +20,9 @@ func (action *DumpRequestPostAction) Run(args mocha.PostActionArgs) error {
 	fmt.Printf("form: %s\n", r.Form)
 	fmt.Printf("body err %v\n", err)
 
+	responseBody, err := io.ReadAll(args.Response.Body)
+	fmt.Printf("response: %s\n", string(responseBody))
+
 	return nil
 }
 

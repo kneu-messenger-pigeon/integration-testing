@@ -57,7 +57,7 @@ func loadConfig(envFilename string) (Config, error) {
 
 	appStartDelay, err := strconv.Atoi(os.Getenv("APP_START_DELAY"))
 	if appStartDelay == 0 || err != nil {
-		appStartDelay = 25
+		appStartDelay = 10
 	}
 
 	repeatScoreChangesTimeframeSeconds, err := strconv.Atoi(os.Getenv("TIMEFRAME_TO_COMBINE_REPEAT_SCORE_CHANGES"))
