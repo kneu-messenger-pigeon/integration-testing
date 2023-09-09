@@ -67,8 +67,8 @@ func Test2EnsureAuthFlow(t *testing.T) {
 
 	assert.Equal(t, "Пані "+fakeUser.FirstName+", Ваша загальна успішність у навчанні:", lines[0])
 
-	assert.Equal(t, lines[3], "1. Системи управління знаннями")
-	assert.Equal(t, lines[4], "     *результат 24*, _рейтинг #3/3_")
+	assert.Equal(t, "1. Системи управління знаннями", lines[3])
+	assert.Equal(t, "     *результат 24*, _рейтинг #3/3_", lines[4])
 
 	assert.Equal(t, "Вимкнути бот - /reset", lines[len(lines)-5])
 	assert.Equal(t, "❗Увага❗", lines[len(lines)-3])

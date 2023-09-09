@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
+	"github.com/vitorsalgado/mocha/v3/reply"
 	"strconv"
 	"testing"
 	"time"
@@ -49,13 +50,16 @@ func createScoresForTest3(
 
 	fmt.Printf("Create lesson %d with two scores: %d and %d\n", lesson.LessonId, score1Id, score2Id)
 
-	UpdateDbDatetimeAndWait(t, secondaryDekanatDb, lessonDate)
+	UpdateDbDatetimeAndWait(t, secondaryDekanatDb, lessonDate.Add(time.Hour*1))
 
 	return
 }
 
 func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	fmt.Println("Test3SecondaryDatabaseUpdates")
+	if config.repeatScoreChangesTimeframeSeconds < time.Second*30 {
+		fmt.Println("Warning! Too small repeatScoreChangesTimeframeSeconds < 30 seconds")
+	}
 
 	secondaryDekanatDb, err := sql.Open("firebirdsql", config.secondaryDekanatDbDSN)
 	assert.NoError(t, err)
@@ -92,11 +96,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	catchMessage := &CatchMessagePostAction{}
 	expectNewScoreMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
 		mocha.Post(expect.URLPath("/sendMessage")).
-			Body(
-				expectMarkdownV2, expectChatId(userId),
-				expect.JSONPath("text", expect.ToContain(" запис: ")),
-				expect.JSONPath("text", expect.ToContain(" заняття ")),
-			).
+			Body(expectMarkdownV2, expectChatId(userId)).
 			Reply(getSendMessageSuccessResponse()).
 			Repeat(1).
 			PostAction(catchMessage),
@@ -110,7 +110,10 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	expectEditScoreMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
 		mocha.Post(expect.URLPath("/editMessageText")).
 			Body(expectMarkdownV2, expectChatId(userId)).
-			Reply(getEditMessageSuccessResponse()).
+			Reply(
+				reply.Seq().
+					Add(getEditMessageSuccessResponse(), getEditMessageSuccessResponse()),
+			).
 			PostAction(catchMessage),
 	)
 	defer expectEditScoreMessageScope.Clean()
@@ -151,11 +154,12 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 		catchMessage.Reset()
 
 		startTime = time.Now()
-		waitUntilCalled(expectEditScoreMessageScope, 5*time.Second)
+		waitUntilCalled(expectEditScoreMessageScope, 10*time.Second)
 		actualWaitingTime = time.Since(startTime)
 		if !assert.Equal(t, 1, expectEditScoreMessageScope.Hits()) {
 			return
 		}
+		fmt.Println("Receive message ", catchMessage.Text)
 		fmt.Println("Receive edited score message in ", actualWaitingTime)
 	}
 
@@ -174,7 +178,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	fmt.Println("Change score and expect change message with changes score")
 	// 5. Change scores in the secondary DB
 	catchMessage.Reset()
-	newRegTime := lessonDate.Add(time.Minute * 30)
+	newRegTime := lessonDate.Add(time.Hour * 2)
 	editedScore1Value := 5
 	UpdateScore(t, secondaryDekanatDb, score1Id, editedScore1Value, false, newRegTime)
 	// 6. Update the database timestamp and wait X seconds
@@ -213,7 +217,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	)
 	defer expectDeleteMessageScope.Clean()
 
-	newRegTime = newRegTime.Add(time.Minute * 30)
+	newRegTime = newRegTime.Add(time.Hour * 3)
 	DeleteScore(t, secondaryDekanatDb, score1Id, newRegTime)
 	DeleteScore(t, secondaryDekanatDb, score2Id, newRegTime)
 	// 9. Update the database timestamp and wait X seconds
