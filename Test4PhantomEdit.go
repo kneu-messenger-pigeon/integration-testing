@@ -96,7 +96,9 @@ func Test4PhantomEdit(t *testing.T) {
 	}
 
 	fmt.Println("catchMessage.Text", catchMessage.Text)
-	assert.Equal(t, expectedText, catchMessage.Text)
+	if !assert.Equal(t, expectedText, catchMessage.Text) {
+		return
+	}
 
 	// revert back changes and expect for delete message
 	expectDeleteMessageScope := mocks.TelegramMockServer.mocha.AddMocks(
@@ -113,6 +115,12 @@ func Test4PhantomEdit(t *testing.T) {
 
 	waitUntilCalled(expectDeleteMessageScope, 10*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)
+
+	if !t.Failed() {
+		fmt.Println("Test4PhantomEdit passed")
+	} else {
+		fmt.Println("Test4PhantomEdit failed")
+	}
 }
 
 /*

@@ -123,4 +123,10 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 		},
 	})
 	sendMessageMockScope.AssertCalled(t)
+
+	if !t.Failed() {
+		fmt.Println("Test5BotDeactivatedByUser passed")
+	} else {
+		fmt.Println("Test5BotDeactivatedByUser failed")
+	}
 }

@@ -168,4 +168,10 @@ func Test2EnsureAuthFlow(t *testing.T) {
 
 	// 12. expect Welcome anon message
 	expectAuthorizationMessageAfterResetScope.AssertCalled(t)
+
+	if t.Failed() {
+		fmt.Println("Test2EnsureAuthFlow failed")
+	} else {
+		fmt.Println("Test2EnsureAuthFlow passed")
+	}
 }
