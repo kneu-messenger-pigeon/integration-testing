@@ -7,4 +7,5 @@ func setupTests(t *testing.T) {
 	t.Run("Test2EnsureAuthFlow", Test2EnsureAuthFlow)
 	t.Run("Test3SecondaryDatabaseUpdates", Test3SecondaryDatabaseUpdates)
 	t.Run("Test4PhantomEdit", Test4PhantomEdit)
+	t.Run("Test5BotDeactivatedByUser", Test5BotDeactivatedByUser)
 }
