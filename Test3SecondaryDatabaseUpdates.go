@@ -61,16 +61,6 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 		fmt.Println("Warning! Too small repeatScoreChangesTimeframeSeconds < 30 seconds")
 	}
 
-	secondaryDekanatDb, err := sql.Open("firebirdsql", config.secondaryDekanatDbDSN)
-	assert.NoError(t, err)
-	if err != nil {
-		return
-	}
-	defer secondaryDekanatDb.Close()
-
-	err = secondaryDekanatDb.Ping()
-	assert.NoError(t, err, "failed to ping secondary db")
-
 	UpdateDbDatetime(t, secondaryDekanatDb, time.Date(2023, 7, 6, 0, 0, 0, 0, time.UTC))
 
 	userId := test3SecondaryDatabaseUserId

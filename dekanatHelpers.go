@@ -186,6 +186,23 @@ func DeleteScore(t *testing.T, db *sql.DB, scoreId int, datetime time.Time) {
 	assert.NotEmpty(t, affected)
 }
 
+func GetScoreValue(t *testing.T, db *sql.DB, scoreId int) int {
+	var err error
+	var row *sql.Row
+
+	row = db.QueryRow(
+		"SELECT XR_1 FROM T_EV_9 WHERE ID = ?",
+		scoreId,
+	)
+	assert.NoError(t, err)
+
+	var scoreValue int
+	err = row.Scan(&scoreValue)
+	assert.NoError(t, err)
+
+	return scoreValue
+}
+
 func UpdateDbDatetime(t *testing.T, db *sql.DB, datetime time.Time) {
 	result, err := db.Exec("UPDATE TSESS_LOG SET CON_DATA = ?", datetime.Format(dateFormat))
 	assert.NoError(t, err)
