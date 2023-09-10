@@ -45,6 +45,7 @@ func createScoresForTest5(
 
 func Test5BotDeactivatedByUser(t *testing.T) {
 	fmt.Println("Test5BotDeactivatedByUser")
+	defer printTestResult(t, "Test5BotDeactivatedByUser")
 
 	startRegDate := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
 	UpdateDbDatetime(t, secondaryDekanatDb, startRegDate)
@@ -123,10 +124,4 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 		},
 	})
 	sendMessageMockScope.AssertCalled(t)
-
-	if !t.Failed() {
-		fmt.Println("Test5BotDeactivatedByUser passed")
-	} else {
-		fmt.Println("Test5BotDeactivatedByUser failed")
-	}
 }

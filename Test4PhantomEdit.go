@@ -18,6 +18,7 @@ score 1 id 32788943
 
 func Test4PhantomEdit(t *testing.T) {
 	fmt.Println("Test4PhantomEdit")
+	defer printTestResult(t, "Test4PhantomEdit")
 
 	startRegDate := time.Date(2023, 7, 6, 6, 0, 0, 0, time.UTC)
 	UpdateDbDatetime(t, secondaryDekanatDb, startRegDate)
@@ -115,12 +116,6 @@ func Test4PhantomEdit(t *testing.T) {
 
 	waitUntilCalled(expectDeleteMessageScope, 10*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)
-
-	if !t.Failed() {
-		fmt.Println("Test4PhantomEdit passed")
-	} else {
-		fmt.Println("Test4PhantomEdit failed")
-	}
 }
 
 /*

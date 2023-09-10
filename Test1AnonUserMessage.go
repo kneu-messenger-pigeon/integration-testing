@@ -7,6 +7,7 @@ import (
 
 func Test1AnonUserMessage(t *testing.T) {
 	fmt.Println("Test1AnonUserMessage")
+	defer printTestResult(t, "Test1AnonUserMessage")
 
 	userId := test1LoginUserId
 
@@ -30,10 +31,4 @@ func Test1AnonUserMessage(t *testing.T) {
 
 	sendMessageMockScope.AssertCalled(t)
 	captureNotMatchedScope.AssertNotCalled(t)
-
-	if !t.Failed() {
-		fmt.Println("Test1AnonUserMessage passed")
-	} else {
-		fmt.Println("Test1AnonUserMessage failed")
-	}
 }

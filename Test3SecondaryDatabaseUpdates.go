@@ -57,6 +57,8 @@ func createScoresForTest3(
 
 func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	fmt.Println("Test3SecondaryDatabaseUpdates")
+	defer printTestResult(t, "Test3SecondaryDatabaseUpdates")
+
 	if config.repeatScoreChangesTimeframeSeconds < time.Second*30 {
 		fmt.Println("Warning! Too small repeatScoreChangesTimeframeSeconds < 30 seconds")
 	}
@@ -217,10 +219,4 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	waitUntilCalled(expectDeleteMessageScope, 15*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)
 	expectDeleteMessageScope.Clean()
-
-	if !t.Failed() {
-		fmt.Println("Test3SecondaryDatabaseUpdates passed")
-	} else {
-		fmt.Println("Test3SecondaryDatabaseUpdates failed")
-	}
 }
