@@ -30,4 +30,10 @@ func Test1AnonUserMessage(t *testing.T) {
 
 	sendMessageMockScope.AssertCalled(t)
 	captureNotMatchedScope.AssertNotCalled(t)
+
+	if !t.Failed() {
+		fmt.Println("Test1AnonUserMessage passed")
+	} else {
+		fmt.Println("Test1AnonUserMessage failed")
+	}
 }
