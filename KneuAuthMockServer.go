@@ -149,7 +149,7 @@ func (mockServer *KneuAuthMockServer) EmulateAuthFlow(t *testing.T, authUrlStrin
 	)
 	defer authorizerClientRequestsScope.Clean()
 
-	fmt.Println("emulate success auth redirect to:", redirectUri.String())
+	fmt.Println("emulate success auth redirect to redirectUri.", redirectUri.String()[0:50]+"...")
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

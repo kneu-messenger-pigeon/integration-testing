@@ -16,6 +16,7 @@ type Config struct {
 	primaryDekanatDbDSN                string
 	secondaryDekanatDbDSN              string
 	secondaryDbCheckInterval           time.Duration
+	sqsQueueUrl                        string
 	telegramToken                      string
 	repeatScoreChangesTimeframeSeconds time.Duration
 	appStartDelay                      time.Duration
@@ -72,6 +73,7 @@ func loadConfig(envFilename string) (Config, error) {
 		primaryDekanatDbDSN:                os.Getenv("PRIMARY_DEKANAT_DB_DSN"),
 		secondaryDekanatDbDSN:              os.Getenv("SECONDARY_DEKANAT_DB_DSN"),
 		secondaryDbCheckInterval:           time.Second * time.Duration(secondaryDbCheckInterval),
+		sqsQueueUrl:                        os.Getenv("AWS_SQS_QUEUE_URL"),
 		telegramToken:                      os.Getenv("TELEGRAM_TOKEN"),
 		repeatScoreChangesTimeframeSeconds: time.Second * time.Duration(repeatScoreChangesTimeframeSeconds),
 		appStartDelay:                      time.Second * time.Duration(appStartDelay),

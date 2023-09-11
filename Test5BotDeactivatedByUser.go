@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
@@ -12,7 +11,7 @@ import (
 )
 
 func createScoresForTest5(
-	t *testing.T, secondaryDekanatDb *sql.DB, fakeUser *FakeUser,
+	t *testing.T, fakeUser *FakeUser,
 	disciplineId int, lessonDate time.Time, score1Value int,
 ) (score1Id int) {
 	lesson := &Lesson{
@@ -23,22 +22,23 @@ func createScoresForTest5(
 		LessonDate:   lessonDate,
 		TeachId:      6479,
 		TeachUserId:  2715,
+		RegDate:      lessonDate,
 	}
 
-	lesson.LessonId = AddLesson(t, secondaryDekanatDb, *lesson)
+	lesson.LessonId = AddLesson(t, mocks.SecondaryDB, *lesson)
 
-	score1 := Score{
+	score1 := &Score{
 		Lesson:     lesson,
 		StudentId:  fakeUser.StudentId,
 		LessonPart: 1,
 		Score:      score1Value,
 	}
 
-	score1Id = AddScore(t, secondaryDekanatDb, score1)
+	score1Id = AddScore(t, mocks.SecondaryDB, score1)
 
 	fmt.Printf("Create lesson %d with score: %d\n", lesson.LessonId, score1Id)
 
-	UpdateDbDatetimeAndWait(t, secondaryDekanatDb, lessonDate.Add(time.Hour*1))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*1))
 
 	return
 }
@@ -48,7 +48,7 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 	defer printTestResult(t, "Test5BotDeactivatedByUser")
 
 	startRegDate := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
-	UpdateDbDatetime(t, secondaryDekanatDb, startRegDate)
+	UpdateDbDatetime(t, mocks.SecondaryDB, startRegDate)
 
 	userId := Test5BotDeactivatedUserId
 	fakeUser := &FakeUser{
@@ -89,7 +89,7 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 	expectDisciplineId := 198568
 
 	scoreValue := 3
-	createScoresForTest5(t, secondaryDekanatDb, fakeUser, expectDisciplineId, startRegDate.Add(time.Minute*30), scoreValue)
+	createScoresForTest5(t, fakeUser, expectDisciplineId, startRegDate.Add(time.Minute*30), scoreValue)
 
 	expectedText := fmt.Sprintf(
 		"Новий запис: %s, заняття %s _Лабораторна роб._: %d",

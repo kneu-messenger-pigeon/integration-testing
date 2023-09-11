@@ -24,6 +24,7 @@ type Lesson struct {
 	LessonDate   time.Time
 	TeachId      int
 	TeachUserId  int
+	RegDate      time.Time
 }
 
 type Score struct {
@@ -87,13 +88,14 @@ func AddLesson(t *testing.T, db *sql.DB, lesson Lesson) int {
 	var idRow *sql.Row
 	var err error
 
+	regDate := lesson.RegDate.Format(dateFormat)
 	lessonDate := lesson.LessonDate.Format(dateFormat)
 
 	// create new lesson
 	idRow = db.QueryRow(
 		insertLessonQuery,
 		lesson.GroupId, lesson.DisciplineId, lesson.LessonTypeId,
-		lessonDate, lessonDate,
+		regDate, lessonDate,
 		lesson.TeachId, lesson.TeachUserId, lesson.Semester,
 	)
 	if !assert.NoError(t, idRow.Err()) {
@@ -107,11 +109,12 @@ func AddLesson(t *testing.T, db *sql.DB, lesson Lesson) int {
 	return lesson.LessonId
 }
 
-func AddScore(t *testing.T, db *sql.DB, score Score) int {
+func AddScore(t *testing.T, db *sql.DB, score *Score) int {
 	var idRow *sql.Row
 	var err error
 
 	lesson := score.Lesson
+	regDate := lesson.RegDate.Format(dateFormat)
 	lessonDate := lesson.LessonDate.Format(dateFormat)
 
 	// create new score
@@ -125,7 +128,7 @@ func AddScore(t *testing.T, db *sql.DB, score Score) int {
 
 	idRow = db.QueryRow(
 		insertScoreQuery,
-		score.StudentId, lessonDate, lessonDate,
+		score.StudentId, regDate, lessonDate,
 		lesson.LessonId, score.LessonPart, lesson.GroupId, lesson.DisciplineId,
 		lesson.Semester,
 
@@ -163,6 +166,21 @@ func UpdateScore(t *testing.T, db *sql.DB, scoreId int, score int, isAbsent bool
 		argScoreValue, argAbsent,
 		datetime.Format(dateFormat),
 		scoreId,
+	)
+	assert.NoError(t, err)
+
+	affected, err := result.RowsAffected()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, affected)
+}
+
+func DeleteLesson(t *testing.T, db *sql.DB, lessonId int, datetime time.Time) {
+	var err error
+	var result sql.Result
+
+	result, err = db.Exec(
+		"UPDATE T_PRJURN SET FSTATUS = 0, REGDATE = ? WHERE ID = ?",
+		datetime.Format(dateFormat), lessonId,
 	)
 	assert.NoError(t, err)
 
@@ -219,4 +237,55 @@ func UpdateDbDatetimeAndWait(t *testing.T, db *sql.DB, datetime time.Time) {
 		datetime, int(config.secondaryDbCheckInterval.Seconds()),
 	)
 	time.Sleep(config.secondaryDbCheckInterval)
+}
+
+func SyncDbAutoIncrements() {
+	tableNames := [2]string{
+		"T_PRJURN",
+		"T_EV_9",
+	}
+
+	for _, tableName := range tableNames {
+		primaryDbMaxId := getMaxId(mocks.SecondaryDB, tableName)
+		secondaryDbMaxId := getMaxId(mocks.SecondaryDB, tableName)
+		if secondaryDbMaxId < primaryDbMaxId {
+			setAutoIncrement(mocks.SecondaryDB, tableName, primaryDbMaxId+1)
+		} else if primaryDbMaxId < secondaryDbMaxId {
+			setAutoIncrement(mocks.PrimaryDB, tableName, secondaryDbMaxId+1)
+		}
+	}
+}
+
+func getMaxId(db *sql.DB, tableName string) int {
+	row := db.QueryRow("SELECT MAX(ID) FROM " + tableName)
+	maxId := 0
+	err := row.Scan(&maxId)
+	if err != nil {
+		panic(err)
+	}
+
+	return maxId
+}
+
+func setAutoIncrement(db *sql.DB, tableName string, nextId int) {
+	_, err := db.Exec("ALTER TABLE " + tableName + " ALTER COLUMN ID RESTART WITH " + strconv.Itoa(nextId))
+	if err != nil {
+		panic(err)
+	}
+}
+
+func OpenDbConnection(t *testing.T, dsn string) *sql.DB {
+	db, err := sql.Open("firebirdsql", dsn)
+	assert.NoError(t, err)
+	if err != nil {
+		t.FailNow()
+	}
+
+	err = db.Ping()
+	assert.NoError(t, err)
+	if err != nil {
+		t.FailNow()
+	}
+
+	return db
 }

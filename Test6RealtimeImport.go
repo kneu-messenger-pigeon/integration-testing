@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	_ "github.com/nakagami/firebirdsql"
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
@@ -12,60 +11,13 @@ import (
 	"time"
 )
 
-func createScoresForTest3(
-	t *testing.T, fakeUser *FakeUser,
-	disciplineId int, lessonDate time.Time,
-	score1Value int, score2Value int,
-) (score1Id int, score2Id int) {
-	lesson := &Lesson{
-		GroupId:      fakeUser.GroupId,
-		DisciplineId: disciplineId,
-		Semester:     2,
-		LessonTypeId: 15,
-		LessonDate:   lessonDate,
-		TeachId:      6479,
-		TeachUserId:  2715,
-		RegDate:      lessonDate,
-	}
+func Test6RealtimeImport(t *testing.T) {
+	fmt.Println("Test6RealtimeImport")
+	defer printTestResult(t, "Test6RealtimeImport")
 
-	lesson.LessonId = AddLesson(t, mocks.SecondaryDB, *lesson)
+	SyncDbAutoIncrements()
 
-	score1 := &Score{
-		Lesson:     lesson,
-		StudentId:  fakeUser.StudentId,
-		LessonPart: 1,
-		Score:      score1Value,
-	}
-
-	score1Id = AddScore(t, mocks.SecondaryDB, score1)
-
-	score2 := &Score{
-		Lesson:     lesson,
-		StudentId:  fakeUser.StudentId,
-		LessonPart: 2,
-		Score:      score2Value,
-	}
-
-	score2Id = AddScore(t, mocks.SecondaryDB, score2)
-
-	fmt.Printf("Create lesson %d with two scores: %d and %d\n", lesson.LessonId, score1Id, score2Id)
-
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*1))
-
-	return
-}
-
-func Test3SecondaryDatabaseUpdates(t *testing.T) {
-	fmt.Println("Test3SecondaryDatabaseUpdates")
-	defer printTestResult(t, "Test3SecondaryDatabaseUpdates")
-
-	if config.repeatScoreChangesTimeframeSeconds < time.Second*30 {
-		fmt.Println("Warning! Too small repeatScoreChangesTimeframeSeconds < 30 seconds")
-	}
-
-	UpdateDbDatetime(t, mocks.SecondaryDB, time.Date(2023, 7, 6, 0, 0, 0, 0, time.UTC))
-
-	userId := test3SecondaryDatabaseUserId
+	userId := test6RealtimeImportUserId
 	fakeUser := &FakeUser{
 		Id:         320,
 		StudentId:  113509,
@@ -78,7 +30,38 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 
 	sender := &User{
 		ID:       int64(userId),
-		Username: "testUser3",
+		Username: "testUser6",
+	}
+
+	expectDisciplineName := "Моделювання інформаційних систем і компʼютерних мереж"
+	expectDisciplineId := 198569
+	lessonDate := time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC)
+	score1Value := 3
+	score2Value := 4
+
+	lesson := &Lesson{
+		GroupId:      fakeUser.GroupId,
+		DisciplineId: expectDisciplineId,
+		Semester:     2,
+		LessonTypeId: 15,
+		LessonDate:   lessonDate,
+		TeachId:      6479,
+		TeachUserId:  2715,
+		RegDate:      time.Now(),
+	}
+
+	score1 := &Score{
+		Lesson:     lesson,
+		StudentId:  fakeUser.StudentId,
+		LessonPart: 1,
+		Score:      score1Value,
+	}
+
+	score2 := &Score{
+		Lesson:     lesson,
+		StudentId:  fakeUser.StudentId,
+		LessonPart: 2,
+		Score:      score2Value,
 	}
 
 	// 1. Login as user
@@ -111,13 +94,14 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	defer expectEditScoreMessageScope.Clean()
 
 	// 2. push new records into the secondary
-	expectDisciplineName := "Нейрокомпʼютерні системи"
-	expectDisciplineId := 198568
-	lessonDate := time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC)
-	score1Value := 3
-	score2Value := 4
-	// 3. Update the database timestamp and wait X seconds
-	score1Id, score2Id := createScoresForTest3(t, fakeUser, expectDisciplineId, lessonDate, score1Value, score2Value)
+	lesson.LessonId = AddLesson(t, mocks.PrimaryDB, *lesson)
+	score1Id := AddScore(t, mocks.PrimaryDB, score1)
+	score2Id := AddScore(t, mocks.PrimaryDB, score2)
+	fmt.Printf("Create lesson %d with two scores: %d and %d\n", lesson.LessonId, score1Id, score2Id)
+
+	// 3. Send message into queue to emulate realtime event sender
+	mocks.RealtimeQueue.SendLessonCreateEvent(lesson)
+	mocks.RealtimeQueue.SendScoreEditEvent(lesson, []*Score{score1, score2})
 
 	expectedText := fmt.Sprintf(
 		"Новий запис: %s, заняття %s _Зан.в дистанц.реж._: %d та %d",
@@ -125,7 +109,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	)
 
 	startTime := time.Now()
-	waitUntilCalled(expectNewScoreMessageScope, 15*time.Second)
+	waitUntilCalled(expectNewScoreMessageScope, 10*time.Second)
 	actualWaitingTime := time.Since(startTime)
 
 	assert.Equal(t, 1, expectNewScoreMessageScope.Hits())
@@ -143,7 +127,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 		catchMessage.Reset()
 
 		startTime = time.Now()
-		waitUntilCalled(expectEditScoreMessageScope, 10*time.Second)
+		waitUntilCalled(expectEditScoreMessageScope, 5*time.Second)
 		actualWaitingTime = time.Since(startTime)
 		if !assert.Equal(t, 1, expectEditScoreMessageScope.Hits()) {
 			return
@@ -165,13 +149,12 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 
 	fmt.Println("")
 	fmt.Println("Change score and expect change message with changes score")
-	// 5. Change scores in the secondary DB
+	// 5. Change scores in the primary DB
 	catchMessage.Reset()
-	newRegTime := lessonDate.Add(time.Hour * 2)
 	editedScore1Value := 5
-	UpdateScore(t, mocks.SecondaryDB, score1Id, editedScore1Value, false, newRegTime)
-	// 6. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, newRegTime)
+	UpdateScore(t, mocks.PrimaryDB, score1Id, editedScore1Value, false, time.Now())
+	// 6. Send message to emulate realtime event-sender
+	mocks.RealtimeQueue.SendScoreEditEvent(lesson, []*Score{score1, score2})
 
 	fmt.Println("score1Id, score2Id", score1Id, score2Id)
 
@@ -206,11 +189,11 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	)
 	defer expectDeleteMessageScope.Clean()
 
-	newRegTime = newRegTime.Add(time.Hour * 3)
-	DeleteScore(t, mocks.SecondaryDB, score1Id, newRegTime)
-	DeleteScore(t, mocks.SecondaryDB, score2Id, newRegTime)
+	DeleteScore(t, mocks.PrimaryDB, score1Id, time.Now())
+	DeleteScore(t, mocks.PrimaryDB, score2Id, time.Now())
+	DeleteLesson(t, mocks.PrimaryDB, lesson.LessonId, time.Now())
 	// 9. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, newRegTime)
+	mocks.RealtimeQueue.SendLessonDeletedEvent(lesson)
 
 	// 10. Expect to delete the message.
 	waitUntilCalled(expectDeleteMessageScope, 15*time.Second)

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
@@ -15,8 +13,6 @@ var mocks *Mocks
 var config Config
 
 var stubMatch = func(pat, str string) (bool, error) { return true, nil }
-
-var secondaryDekanatDb *sql.DB
 
 func main() {
 	var err error
@@ -36,6 +32,10 @@ func main() {
 		F: func(t *testing.T) {
 			mocks = createMocks(t, config)
 
+			if t.Failed() {
+				return
+			}
+
 			if !config.skipWait {
 				WaitTelegramAppStarted()
 				WaitSecondaryDbScoreProcessedEvent()
@@ -43,19 +43,6 @@ func main() {
 
 				fmt.Printf("App is started. Wait %d seconds for app to be ready..\n", int(config.appStartDelay.Seconds()))
 				time.Sleep(config.appStartDelay)
-			}
-
-			secondaryDekanatDb, err = sql.Open("firebirdsql", config.secondaryDekanatDbDSN)
-			assert.NoError(t, err)
-			if err != nil {
-				return
-			}
-			defer secondaryDekanatDb.Close()
-
-			err = secondaryDekanatDb.Ping()
-			assert.NoError(t, err, "failed to ping secondary db")
-			if err != nil {
-				return
 			}
 
 			fmt.Println("Start testing..")

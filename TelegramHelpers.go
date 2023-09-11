@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -86,7 +87,7 @@ func logoutUser(chatId int) {
 	waitUntilCalled(sendMessageScope, 5*time.Second)
 
 	if len(catchMessage.Text) > 100 {
-		catchMessage.Text = catchMessage.Text[0:100]
+		catchMessage.Text = strings.Trim(catchMessage.Text[0:80], " ") + "..."
 	}
 
 	fmt.Println("logoutUser ", strconv.Itoa(chatId), " result: ", catchMessage.Text)

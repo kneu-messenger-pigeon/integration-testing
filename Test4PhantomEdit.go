@@ -21,7 +21,7 @@ func Test4PhantomEdit(t *testing.T) {
 	defer printTestResult(t, "Test4PhantomEdit")
 
 	startRegDate := time.Date(2023, 7, 6, 6, 0, 0, 0, time.UTC)
-	UpdateDbDatetime(t, secondaryDekanatDb, startRegDate)
+	UpdateDbDatetime(t, mocks.SecondaryDB, startRegDate)
 
 	userId := test4PhantomEditUserId
 	fakeUser := &FakeUser{
@@ -45,8 +45,8 @@ func Test4PhantomEdit(t *testing.T) {
 	score2Id := 32441823
 	lessonId := 2672002
 
-	initialScore1Value := GetScoreValue(t, secondaryDekanatDb, score1Id)
-	initialScore2Value := GetScoreValue(t, secondaryDekanatDb, score2Id)
+	initialScore1Value := GetScoreValue(t, mocks.SecondaryDB, score1Id)
+	initialScore2Value := GetScoreValue(t, mocks.SecondaryDB, score2Id)
 
 	fmt.Printf("Lesson id %d - initial score values: %d and %d \n", lessonId, initialScore1Value, initialScore2Value)
 
@@ -76,9 +76,9 @@ func Test4PhantomEdit(t *testing.T) {
 	newScore1Value := initialScore1Value + 1
 	newScore2Value := initialScore2Value + 2
 
-	UpdateScore(t, secondaryDekanatDb, score1Id, newScore1Value, false, regDate)
-	UpdateScore(t, secondaryDekanatDb, score2Id, newScore2Value, false, regDate)
-	UpdateDbDatetimeAndWait(t, secondaryDekanatDb, startRegDate.Add(time.Hour))
+	UpdateScore(t, mocks.SecondaryDB, score1Id, newScore1Value, false, regDate)
+	UpdateScore(t, mocks.SecondaryDB, score2Id, newScore2Value, false, regDate)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, startRegDate.Add(time.Hour))
 
 	expectedText := fmt.Sprintf(
 		"Змінено запис: Фахова іноземна мова, заняття 28.04.2023 _Зан.в дистанц.реж._: %d та %d (було ~%d та %d~)",
@@ -110,9 +110,9 @@ func Test4PhantomEdit(t *testing.T) {
 	defer expectDeleteMessageScope.Clean()
 
 	regDate = startRegDate.Add(time.Minute * 90)
-	UpdateScore(t, secondaryDekanatDb, score1Id, initialScore1Value, false, regDate)
-	UpdateScore(t, secondaryDekanatDb, score2Id, initialScore2Value, false, regDate)
-	UpdateDbDatetimeAndWait(t, secondaryDekanatDb, startRegDate.Add(time.Hour*2))
+	UpdateScore(t, mocks.SecondaryDB, score1Id, initialScore1Value, false, regDate)
+	UpdateScore(t, mocks.SecondaryDB, score2Id, initialScore2Value, false, regDate)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, startRegDate.Add(time.Hour*2))
 
 	waitUntilCalled(expectDeleteMessageScope, 10*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)
