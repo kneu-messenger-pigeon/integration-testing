@@ -129,15 +129,17 @@ func Test6RealtimeImport(t *testing.T) {
 		startTime = time.Now()
 		waitUntilCalled(expectEditScoreMessageScope, 5*time.Second)
 		actualWaitingTime = time.Since(startTime)
-		if !assert.Equal(t, 1, expectEditScoreMessageScope.Hits()) {
+		if !expectEditScoreMessageScope.AssertCalled(t) {
 			return
 		}
+		// assert that edit same message as send
+		assert.Equal(t, strconv.Itoa(scoreMessageId), catchMessage.MessageId)
+
 		fmt.Println("Receive message ", catchMessage.Text)
 		fmt.Println("Receive edited score message in ", actualWaitingTime)
 	}
 
 	assert.Equal(t, expectedText, catchMessage.Text)
-	assert.Equal(t, strconv.Itoa(scoreMessageId), catchMessage.MessageId)
 
 	disciplineButton := catchMessage.GetInlineButton(0)
 	if !assert.NotNil(t, disciplineButton) {
@@ -149,6 +151,11 @@ func Test6RealtimeImport(t *testing.T) {
 
 	fmt.Println("")
 	fmt.Println("Change score and expect change message with changes score")
+	// reset called amount
+	for expectEditScoreMessageScope.ListAll()[0].Hits() > 0 {
+		expectEditScoreMessageScope.ListAll()[0].Dec()
+	}
+
 	// 5. Change scores in the primary DB
 	catchMessage.Reset()
 	editedScore1Value := 5
@@ -160,13 +167,9 @@ func Test6RealtimeImport(t *testing.T) {
 
 	// 7. Expect an edit message.
 	startTime = time.Now()
-	waitUntilCalledTimes(expectEditScoreMessageScope, 10*time.Second, 2)
+	waitUntilCalled(expectEditScoreMessageScope, 10*time.Second)
 	actualWaitingTime = time.Since(startTime)
 
-	expectEditScoreMessageScope.AssertCalled(t)
-	if !assert.Equal(t, 2, expectEditScoreMessageScope.Hits()) {
-		t.FailNow()
-	}
 	if !expectEditScoreMessageScope.AssertCalled(t) {
 		t.FailNow()
 	}

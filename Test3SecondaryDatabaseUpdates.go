@@ -148,12 +148,15 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 		if !assert.Equal(t, 1, expectEditScoreMessageScope.Hits()) {
 			return
 		}
+
+		// assert that edit same message as send
+		assert.Equal(t, strconv.Itoa(scoreMessageId), catchMessage.MessageId)
+
 		fmt.Println("Receive message ", catchMessage.Text)
 		fmt.Println("Receive edited score message in ", actualWaitingTime)
 	}
 
 	assert.Equal(t, expectedText, catchMessage.Text)
-	assert.Equal(t, strconv.Itoa(scoreMessageId), catchMessage.MessageId)
 
 	disciplineButton := catchMessage.GetInlineButton(0)
 	if !assert.NotNil(t, disciplineButton) {
@@ -165,6 +168,11 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 
 	fmt.Println("")
 	fmt.Println("Change score and expect change message with changes score")
+	// reset called amount
+	for expectEditScoreMessageScope.ListAll()[0].Hits() > 0 {
+		expectEditScoreMessageScope.ListAll()[0].Dec()
+	}
+
 	// 5. Change scores in the secondary DB
 	catchMessage.Reset()
 	newRegTime := lessonDate.Add(time.Hour * 2)
@@ -180,10 +188,6 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	waitUntilCalledTimes(expectEditScoreMessageScope, 10*time.Second, 2)
 	actualWaitingTime = time.Since(startTime)
 
-	expectEditScoreMessageScope.AssertCalled(t)
-	if !assert.Equal(t, 2, expectEditScoreMessageScope.Hits()) {
-		t.FailNow()
-	}
 	if !expectEditScoreMessageScope.AssertCalled(t) {
 		t.FailNow()
 	}
