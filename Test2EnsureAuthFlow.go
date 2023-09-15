@@ -20,7 +20,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		StudentId:  113508,
 		GroupId:    16880,
 		LastName:   "Степанченко",
-		FirstName:  "Ірина",
+		FirstName:  "Дар`я",
 		MiddleName: "Володимирівна",
 		Gender:     "female",
 	}
