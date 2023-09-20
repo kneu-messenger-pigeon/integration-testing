@@ -2,17 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 )
-
-const DekanatFormDateFormat = "02.01.2006"
 
 type Form map[string]string
 
@@ -65,20 +63,14 @@ func CreateRealtimeQueue(t *testing.T) *RealtimeQueue {
 	}
 }
 
-func (queue *RealtimeQueue) sendForm(form *Form) {
-	message := EventMessage{
-		Timestamp: time.Now().Unix(),
-		Ip:        "127.0.0.1",
-		Referer:   "http://example.com",
-		Form:      form,
-	}
-
-	messageBody, err := json.Marshal(message)
-	messageBodyString := string(messageBody)
+func (queue *RealtimeQueue) sendMessage(message *dekanatEvents.Message) {
+	message.Timestamp = time.Now().Unix()
+	message.Ip = "127.0.0.1"
+	message.Referer = "http://example.com"
 
 	sendResult, err := queue.client.SendMessage(context.Background(), &sqs.SendMessageInput{
 		QueueUrl:    queue.sqsQueueUrl,
-		MessageBody: &messageBodyString,
+		MessageBody: message.ToJson(),
 	})
 
 	assert.NoError(queue.t, err, "queue.client.SendMessage(context.Background(), &sqs.SendMessageInput{...}) failed")
@@ -86,78 +78,68 @@ func (queue *RealtimeQueue) sendForm(form *Form) {
 }
 
 func (queue *RealtimeQueue) SendLessonCreateEvent(lesson *Lesson) {
-	queue.sendForm(&Form{
-		"hlf":     strconv.Itoa(lesson.Semester),
-		"prt":     strconv.Itoa(lesson.DisciplineId),
-		"prti":    "0",
-		"teacher": strconv.Itoa(lesson.TeachId),
-		"action":  "insert",
-		"n":       "10",
-		"sesID":   "00AB0000-0000-0000-0000-000CD0000AA0",
-		"m":       "-1",
-		"date_z":  lesson.LessonDate.Format(DekanatFormDateFormat),
-		"tzn":     strconv.Itoa(lesson.LessonTypeId),
-		"result":  "3",
-		"grade":   "",
-	})
+	event := dekanatEvents.LessonCreateEvent{
+		CommonEventData: dekanatEvents.CommonEventData{
+			LessonId:     "0",
+			DisciplineId: strconv.Itoa(lesson.DisciplineId),
+			Semester:     strconv.Itoa(lesson.Semester),
+		},
+		TypeId:    strconv.Itoa(lesson.LessonTypeId),
+		Date:      lesson.LessonDate.Format(dekanatEvents.DekanatFormDateFormat),
+		TeacherId: strconv.Itoa(lesson.TeachId),
+	}
+	queue.sendMessage(event.ToMessage())
 }
 
 func (queue *RealtimeQueue) SendLessonEditEvent(lesson *Lesson) {
-	queue.sendForm(&Form{
-		"hlf":     strconv.Itoa(lesson.Semester),
-		"prt":     strconv.Itoa(lesson.DisciplineId),
-		"prti":    strconv.Itoa(lesson.LessonId),
-		"teacher": strconv.Itoa(lesson.TeachId),
-		"action":  "edit",
-		"n":       "10",
-		"sesID":   "00AB0000-0000-0000-0000-000CD0000AA0",
-		"m":       "-1",
-		"date_z":  lesson.LessonDate.Format(DekanatFormDateFormat),
-		"tzn":     strconv.Itoa(lesson.LessonTypeId),
-		"result":  "",
-		"grade":   "2",
-	})
+	event := dekanatEvents.LessonEditEvent{
+		CommonEventData: dekanatEvents.CommonEventData{
+			LessonId:     strconv.Itoa(lesson.LessonId),
+			DisciplineId: strconv.Itoa(lesson.DisciplineId),
+			Semester:     strconv.Itoa(lesson.Semester),
+		},
+		TypeId:    strconv.Itoa(lesson.LessonTypeId),
+		TeacherId: strconv.Itoa(lesson.TeachId),
+		Date:      lesson.LessonDate.Format(dekanatEvents.DekanatFormDateFormat),
+	}
+	queue.sendMessage(event.ToMessage())
 }
 
 func (queue *RealtimeQueue) SendLessonDeletedEvent(lesson *Lesson) {
-	queue.sendForm(&Form{
-		"sesID":  "00AB0000-0000-0000-0000-000CD0000AA0",
-		"n":      "11",
-		"action": "delete",
-		"prti":   strconv.Itoa(lesson.LessonId),
-		"prt":    strconv.Itoa(lesson.DisciplineId),
-		"d1":     "",
-		"d2":     "",
-		"m":      "-1",
-		"hlf":    strconv.Itoa(lesson.Semester),
-		"course": "undefined",
-	})
+	event := dekanatEvents.LessonDeletedEvent{
+		CommonEventData: dekanatEvents.CommonEventData{
+			LessonId:     strconv.Itoa(lesson.LessonId),
+			DisciplineId: strconv.Itoa(lesson.DisciplineId),
+			Semester:     strconv.Itoa(lesson.Semester),
+		},
+	}
+	queue.sendMessage(event.ToMessage())
 }
 
 func (queue *RealtimeQueue) SendScoreEditEvent(lesson *Lesson, scores []*Score) {
-	form := Form{
-		"sesID":    "00AB0000-0000-0000-0000-000CD0000AA0",
-		"n":        "4",
-		"action":   "",
-		"prti":     strconv.Itoa(lesson.LessonId),
-		"prt":      strconv.Itoa(lesson.DisciplineId),
-		"d1":       lesson.LessonDate.Format(DekanatFormDateFormat),
-		"d2":       lesson.LessonDate.Format(DekanatFormDateFormat),
-		"m":        "-1",
-		"hlf":      strconv.Itoa(lesson.Semester),
-		"course":   "3",
-		"AddEstim": "0",
+	event := dekanatEvents.ScoreEditEvent{
+		CommonEventData: dekanatEvents.CommonEventData{
+			LessonId:     strconv.Itoa(lesson.LessonId),
+			DisciplineId: strconv.Itoa(lesson.DisciplineId),
+			Semester:     strconv.Itoa(lesson.Semester),
+		},
+		Date:   lesson.LessonDate.Format(dekanatEvents.DekanatFormDateFormat),
+		Scores: map[int]map[uint8]string{},
 	}
 
 	var scoreValue string
+	var hasKey bool
 	for _, score := range scores {
 		if score.IsAbsent {
 			scoreValue = "нб/нп"
 		} else {
 			scoreValue = strconv.Itoa(score.Score)
 		}
-		form["st"+strconv.Itoa(score.StudentId)+"_"+strconv.Itoa(score.LessonPart)+"-999999"] = scoreValue
-	}
 
-	queue.sendForm(&form)
+		if _, hasKey = event.Scores[score.StudentId]; !hasKey {
+			event.Scores[score.StudentId] = make(map[uint8]string)
+		}
+		event.Scores[score.StudentId][score.LessonPart] = scoreValue
+	}
+	queue.sendMessage(event.ToMessage())
 }

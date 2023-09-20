@@ -30,7 +30,7 @@ type Lesson struct {
 type Score struct {
 	Lesson     *Lesson
 	StudentId  int
-	LessonPart int
+	LessonPart uint8
 	Score      int
 	IsAbsent   bool
 }

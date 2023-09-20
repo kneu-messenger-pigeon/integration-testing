@@ -6,10 +6,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.39
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5
 	github.com/joho/godotenv v1.5.1
+	github.com/kneu-messenger-pigeon/dekanat-events v0.1.5
 	github.com/kneu-messenger-pigeon/events v0.1.40
 	github.com/nakagami/firebirdsql v0.9.6
 	github.com/segmentio/kafka-go v0.4.42
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/vitorsalgado/mocha/v3 v3.0.2
 	mvdan.cc/xurls/v2 v2.5.0
 )
@@ -29,6 +30,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
