@@ -16,7 +16,7 @@ var stubMatch = func(pat, str string) (bool, error) { return true, nil }
 
 func main() {
 	var err error
-	// Empty main function
+
 	envFilename := ""
 	if _, err = os.Stat(".env"); err == nil {
 		envFilename = ".env"
