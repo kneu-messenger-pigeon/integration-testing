@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kneu-messenger-pigeon/dekanat-events v0.1.5
-	github.com/kneu-messenger-pigeon/events v0.1.40
+	github.com/kneu-messenger-pigeon/events v0.1.41
 	github.com/nakagami/firebirdsql v0.9.6
 	github.com/segmentio/kafka-go v0.4.42
 	github.com/stretchr/testify v1.8.4
