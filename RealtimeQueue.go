@@ -96,7 +96,7 @@ func (queue *RealtimeQueue) SendLessonCreateEvent(lesson *Lesson) {
 		event.DisciplineId = strconv.Itoa(lesson.DisciplineId)
 	}
 
-	fmt.Println("Send dekanat event: ", event.ToMessage().ToJson())
+	fmt.Println("Send dekanat event: ", *event.ToMessage().ToJson())
 
 	queue.sendMessage(event.ToMessage())
 }
