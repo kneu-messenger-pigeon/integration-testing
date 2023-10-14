@@ -69,9 +69,12 @@ func (queue *RealtimeQueue) sendMessage(message *dekanatEvents.Message) {
 	message.Ip = "127.0.0.1"
 	message.Referer = "http://example.com"
 
+	json := message.ToJson()
+	fmt.Println("Send dekanat event: ", json)
+
 	sendResult, err := queue.client.SendMessage(context.Background(), &sqs.SendMessageInput{
 		QueueUrl:    queue.sqsQueueUrl,
-		MessageBody: message.ToJson(),
+		MessageBody: json,
 	})
 
 	assert.NoError(queue.t, err, "queue.client.SendMessage(context.Background(), &sqs.SendMessageInput{...}) failed")
@@ -95,8 +98,6 @@ func (queue *RealtimeQueue) SendLessonCreateEvent(lesson *Lesson) {
 	} else {
 		event.DisciplineId = strconv.Itoa(lesson.DisciplineId)
 	}
-
-	fmt.Println("Send dekanat event: ", *event.ToMessage().ToJson())
 
 	queue.sendMessage(event.ToMessage())
 }
