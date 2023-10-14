@@ -53,7 +53,7 @@ func (queue *RealtimeQueue) sendMessage(message *dekanatEvents.Message) {
 	message.Referer = "http://example.com"
 
 	json := message.ToJson()
-	fmt.Println("Send dekanat event: ", json)
+	fmt.Println("Send dekanat event: ", *json)
 
 	sendResult, err := queue.client.SendMessage(context.Background(), &sqs.SendMessageInput{
 		QueueUrl:    queue.sqsQueueUrl,
