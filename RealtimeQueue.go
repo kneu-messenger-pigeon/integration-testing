@@ -13,28 +13,11 @@ import (
 	"time"
 )
 
-type Form map[string]string
-
 type RealtimeQueue struct {
 	client      *sqs.Client
 	sqsQueueUrl *string
 	t           *testing.T
 }
-
-type EventMessage struct {
-	ReceiptHandle *string
-	Timestamp     int64  `json:"timestamp"`
-	Ip            string `json:"ip"`
-	Referer       string `json:"referer"`
-	Form          *Form  `json:"form"`
-}
-
-const EventMessageJSON = `{
-	"timestamp": %d,
-	"ip": "127.0.0.1",
-	"referer": "http://example.com",
-	"form": %s
-}`
 
 func CreateRealtimeQueue(t *testing.T) *RealtimeQueue {
 	keyPairMapping := [2][2]string{
