@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	dekanatEvents "github.com/kneu-messenger-pigeon/dekanat-events"
@@ -80,38 +81,63 @@ func (queue *RealtimeQueue) sendMessage(message *dekanatEvents.Message) {
 func (queue *RealtimeQueue) SendLessonCreateEvent(lesson *Lesson) {
 	event := dekanatEvents.LessonCreateEvent{
 		CommonEventData: dekanatEvents.CommonEventData{
-			LessonId:     "0",
-			DisciplineId: strconv.Itoa(lesson.DisciplineId),
-			Semester:     strconv.Itoa(lesson.Semester),
+			HasChanges: true,
+			LessonId:   "0",
+			Semester:   strconv.Itoa(lesson.Semester),
 		},
 		TypeId:    strconv.Itoa(lesson.LessonTypeId),
 		Date:      lesson.LessonDate.Format(dekanatEvents.DekanatFormDateFormat),
 		TeacherId: strconv.Itoa(lesson.TeachId),
 	}
+
+	if lesson.CustomGroupLessonId != 0 {
+		event.DisciplineId = "-1"
+	} else {
+		event.DisciplineId = strconv.Itoa(lesson.DisciplineId)
+	}
+
+	fmt.Println("Send dekanat event: ", event.ToMessage().ToJson())
+
 	queue.sendMessage(event.ToMessage())
 }
 
 func (queue *RealtimeQueue) SendLessonEditEvent(lesson *Lesson) {
 	event := dekanatEvents.LessonEditEvent{
 		CommonEventData: dekanatEvents.CommonEventData{
-			LessonId:     strconv.Itoa(lesson.LessonId),
-			DisciplineId: strconv.Itoa(lesson.DisciplineId),
-			Semester:     strconv.Itoa(lesson.Semester),
+			HasChanges: true,
+			Semester:   strconv.Itoa(lesson.Semester),
 		},
 		TypeId:    strconv.Itoa(lesson.LessonTypeId),
 		TeacherId: strconv.Itoa(lesson.TeachId),
 		Date:      lesson.LessonDate.Format(dekanatEvents.DekanatFormDateFormat),
 	}
+
+	if lesson.CustomGroupLessonId != 0 {
+		event.DisciplineId = "-1"
+		event.LessonId = strconv.Itoa(lesson.CustomGroupLessonId)
+	} else {
+		event.DisciplineId = strconv.Itoa(lesson.DisciplineId)
+		event.LessonId = strconv.Itoa(lesson.LessonId)
+	}
+
 	queue.sendMessage(event.ToMessage())
 }
 
 func (queue *RealtimeQueue) SendLessonDeletedEvent(lesson *Lesson) {
 	event := dekanatEvents.LessonDeletedEvent{
 		CommonEventData: dekanatEvents.CommonEventData{
+			HasChanges:   true,
 			LessonId:     strconv.Itoa(lesson.LessonId),
 			DisciplineId: strconv.Itoa(lesson.DisciplineId),
 			Semester:     strconv.Itoa(lesson.Semester),
 		},
+	}
+	if lesson.CustomGroupLessonId != 0 {
+		event.DisciplineId = "undefined"
+		event.LessonId = strconv.Itoa(lesson.CustomGroupLessonId)
+	} else {
+		event.DisciplineId = strconv.Itoa(lesson.DisciplineId)
+		event.LessonId = strconv.Itoa(lesson.LessonId)
 	}
 	queue.sendMessage(event.ToMessage())
 }
@@ -119,6 +145,7 @@ func (queue *RealtimeQueue) SendLessonDeletedEvent(lesson *Lesson) {
 func (queue *RealtimeQueue) SendScoreEditEvent(lesson *Lesson, scores []*Score) {
 	event := dekanatEvents.ScoreEditEvent{
 		CommonEventData: dekanatEvents.CommonEventData{
+			HasChanges:   true,
 			LessonId:     strconv.Itoa(lesson.LessonId),
 			DisciplineId: strconv.Itoa(lesson.DisciplineId),
 			Semester:     strconv.Itoa(lesson.Semester),

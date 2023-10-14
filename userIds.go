@@ -10,4 +10,6 @@ const test4PhantomEditUserId = 106
 
 const Test5BotDeactivatedUserId = 107
 
-const test6RealtimeImportUserId = 108
+const test6RealtimeImportRegularGroupUserId = 108
+
+const test7RealtimeImportCustomGroupUserId = 109

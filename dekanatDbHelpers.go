@@ -25,6 +25,8 @@ type Lesson struct {
 	TeachId      int
 	TeachUserId  int
 	RegDate      time.Time
+
+	CustomGroupLessonId int
 }
 
 type Score struct {
@@ -46,7 +48,7 @@ const insertLessonQuery = `INSERT INTO T_PRJURN(
 	   ?, ?, null,
 	   null, null, null,
 	   ?, ?, ?, 1, 
-	   null, null, 1, 0, 2, 3
+	   ?, ?, 1, 0, 2, 3
 	) RETURNING ID;`
 
 /*
@@ -81,7 +83,7 @@ const insertScoreQuery = `INSERT INTO T_EV_9(
 	  '9999', ?, ?, 
 	   null,  null, null, null, null, null, null, null,
 	  '6.075¤4370     ', null, null, null, null, null,
-	  null, ?, null, null
+	  null, ?, ?, ?
    ) RETURNING ID;`
 
 func AddLesson(t *testing.T, db *sql.DB, lesson Lesson) int {
@@ -91,12 +93,22 @@ func AddLesson(t *testing.T, db *sql.DB, lesson Lesson) int {
 	regDate := lesson.RegDate.Format(dateFormat)
 	lessonDate := lesson.LessonDate.Format(dateFormat)
 
+	var customGroupId *int
+	var customGroupLessonId *int
+
+	if lesson.CustomGroupLessonId != 0 {
+		randomCustomGroupId := 999999
+		customGroupId = &randomCustomGroupId
+		customGroupLessonId = &lesson.CustomGroupLessonId
+	}
+
 	// create new lesson
 	idRow = db.QueryRow(
 		insertLessonQuery,
 		lesson.GroupId, lesson.DisciplineId, lesson.LessonTypeId,
 		regDate, lessonDate,
 		lesson.TeachId, lesson.TeachUserId, lesson.Semester,
+		customGroupId, customGroupLessonId,
 	)
 	if !assert.NoError(t, idRow.Err()) {
 		t.FailNow()
@@ -126,6 +138,15 @@ func AddScore(t *testing.T, db *sql.DB, score *Score) int {
 		scoreValue = &score.Score
 	}
 
+	var customGroupId *int
+	var customGroupLessonId *int
+
+	if lesson.CustomGroupLessonId != 0 {
+		randomCustomGroupId := 999999
+		customGroupId = &randomCustomGroupId
+		customGroupLessonId = &lesson.CustomGroupLessonId
+	}
+
 	idRow = db.QueryRow(
 		insertScoreQuery,
 		score.StudentId, regDate, lessonDate,
@@ -135,6 +156,7 @@ func AddScore(t *testing.T, db *sql.DB, score *Score) int {
 		scoreValue, absentValue,
 		strconv.Itoa(lesson.LessonTypeId), strconv.Itoa(lesson.TeachId),
 		lesson.TeachUserId,
+		customGroupId, customGroupLessonId,
 	)
 	if !assert.NoError(t, idRow.Err()) {
 		t.FailNow()

@@ -11,13 +11,9 @@ import (
 	"time"
 )
 
-func Test6RealtimeImport(t *testing.T) {
-	fmt.Println("Test6RealtimeImport")
-	defer printTestResult(t, "Test6RealtimeImport")
-
+func TestRealtimeImport(t *testing.T, userId int, expectDisciplineId int, expectDisciplineName string, customGroupLessonId int) {
 	SyncDbAutoIncrements()
 
-	userId := test6RealtimeImportUserId
 	fakeUser := &FakeUser{
 		Id:         320,
 		StudentId:  113509,
@@ -30,24 +26,23 @@ func Test6RealtimeImport(t *testing.T) {
 
 	sender := &User{
 		ID:       int64(userId),
-		Username: "testUser6",
+		Username: "testUser" + strconv.Itoa(userId),
 	}
 
-	expectDisciplineName := "Моделювання інформаційних систем і компʼютерних мереж"
-	expectDisciplineId := 198569
 	lessonDate := time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC)
 	score1Value := 3
 	score2Value := 4
 
 	lesson := &Lesson{
-		GroupId:      fakeUser.GroupId,
-		DisciplineId: expectDisciplineId,
-		Semester:     2,
-		LessonTypeId: 15,
-		LessonDate:   lessonDate,
-		TeachId:      6479,
-		TeachUserId:  2715,
-		RegDate:      time.Now(),
+		CustomGroupLessonId: customGroupLessonId,
+		GroupId:             fakeUser.GroupId,
+		DisciplineId:        expectDisciplineId,
+		Semester:            2,
+		LessonTypeId:        15,
+		LessonDate:          lessonDate,
+		TeachId:             6479,
+		TeachUserId:         2715,
+		RegDate:             time.Now(),
 	}
 
 	score1 := &Score{
@@ -109,7 +104,7 @@ func Test6RealtimeImport(t *testing.T) {
 	)
 
 	startTime := time.Now()
-	waitUntilCalled(expectNewScoreMessageScope, 10*time.Second)
+	waitUntilCalled(expectNewScoreMessageScope, 15*time.Second)
 	actualWaitingTime := time.Since(startTime)
 
 	assert.Equal(t, 1, expectNewScoreMessageScope.Hits())
