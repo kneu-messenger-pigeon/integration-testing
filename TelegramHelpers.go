@@ -7,6 +7,7 @@ import (
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
 	"github.com/vitorsalgado/mocha/v3/reply"
+	"integration-testing/expectjson"
 	"mvdan.cc/xurls/v2"
 	"net/url"
 	"regexp"
@@ -18,7 +19,7 @@ import (
 
 var sendMessageLastId = 100
 
-var expectMarkdownV2 = expect.JSONPath("parse_mode", expect.ToEqual("MarkdownV2"))
+var expectMarkdownV2 = expectjson.JSONPathOptional("parse_mode", expect.ToEqual("MarkdownV2"))
 
 func initTelegramHelpers(server *TelegramMockServer) {
 	var err error
@@ -141,14 +142,14 @@ func loginUser(t *testing.T, chatId int, fakeUser *FakeUser, sender *User) {
 }
 
 func expectChatId(chatId int) expect.Matcher {
-	return expect.JSONPath(
+	return expectjson.JSONPathOptional(
 		"chat_id",
 		expect.ToEqual(strconv.Itoa(chatId)),
 	)
 }
 
 func expectMessageId(messageId int) expect.Matcher {
-	return expect.JSONPath(
+	return expectjson.JSONPathOptional(
 		"message_id",
 		expect.ToEqual(strconv.Itoa(messageId)),
 	)
@@ -169,9 +170,9 @@ func expectAuthorizationMessage(chatId int) *mocha.MockBuilder {
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(chatId),
-			expect.JSONPath("text", expect.ToContain("авториз")),
-			expect.JSONPath("text", expect.ToContain(mocks.TelegramMockServer.authUrl)),
-			expect.JSONPath("text", expect.ToMatchExpr(mocks.TelegramMockServer.authUrlRegexp)),
+			expectjson.JSONPathOptional("text", expect.ToContain("авториз")),
+			expectjson.JSONPathOptional("text", expect.ToContain(mocks.TelegramMockServer.authUrl)),
+			expectjson.JSONPathOptional("text", expect.ToMatchExpr(mocks.TelegramMockServer.authUrlRegexp)),
 		).
 		Reply(getSendMessageSuccessResponse())
 }
@@ -181,11 +182,11 @@ func expectWelcomeMessage(chatId int) *mocha.MockBuilder {
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(chatId),
-			expect.JSONPath("text", expect.ToContain("будете отримувати сповіщення")),
-			expect.JSONPath(
+			expectjson.JSONPathOptional("text", expect.ToContain("будете отримувати сповіщення")),
+			expectjson.JSONPathOptional(
 				"reply_markup",
 				expectJsonPayload(
-					expect.JSONPath("keyboard.[0][0].text", expect.ToHavePrefix("/list")),
+					expectjson.JSONPathOptional("keyboard.[0][0].text", expect.ToHavePrefix("/list")),
 				),
 			),
 		).

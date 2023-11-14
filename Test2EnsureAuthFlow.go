@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vitorsalgado/mocha/v3"
 	"github.com/vitorsalgado/mocha/v3/expect"
+	"integration-testing/expectjson"
 	"strings"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(userId),
-			expect.JSONPath("text", expect.ToContain("Ваша загальна успішність у навчанні")),
+			expectjson.JSONPathOptional("text", expect.ToContain("Ваша загальна успішність у навчанні")),
 		).
 		Reply(getSendMessageSuccessResponse()).
 		PostAction(catchMessage)
@@ -89,7 +90,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(userId),
-			expect.JSONPath("text", expect.ToHavePrefix("*Системи управління знаннями*")),
+			expectjson.JSONPathOptional("text", expect.ToHavePrefix("*Системи управління знаннями*")),
 		).
 		Reply(getSendMessageSuccessResponse()).
 		PostAction(catchMessage)
@@ -133,7 +134,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 			Repeat(1).
 			Body(
 				expectMarkdownV2, expectChatId(userId),
-				expect.JSONPath("text", expect.ToHavePrefix("Відтепер надсилання сповіщень зупинено")),
+				expectjson.JSONPathOptional("text", expect.ToHavePrefix("Відтепер надсилання сповіщень зупинено")),
 			).
 			Reply(getSendMessageSuccessResponse()).
 			PostAction(catchMessage),
