@@ -30,11 +30,11 @@ func (h *DelayedDeleteMessageHandler) AddMessage(chatId int, messageId int, time
 	})
 
 	go func() {
-		time.Sleep(timeout)
+		time.Sleep(timeout - time.Second*10)
 
 		deleteMessageMock := mocha.Post(expect.URLPath("/deleteMessage")).
 			Body(expectChatId(chatId), expectMessageId(messageId)).
-			Reply(getDeleteMessageSuccessResponse())
+			Reply(getDeleteMessageSuccessResponse()).Repeat(1)
 
 		expectDeleteMessageScope := mocks.TelegramMockServer.mocha.AddMocks(deleteMessageMock)
 
