@@ -6,19 +6,21 @@ import (
 )
 
 type Mocks struct {
-	PrimaryDB          *sql.DB
-	SecondaryDB        *sql.DB
-	TelegramMockServer *TelegramMockServer
-	KneuAuthMockServer *KneuAuthMockServer
-	RealtimeQueue      *RealtimeQueue
+	PrimaryDB                   *sql.DB
+	SecondaryDB                 *sql.DB
+	TelegramMockServer          *TelegramMockServer
+	KneuAuthMockServer          *KneuAuthMockServer
+	RealtimeQueue               *RealtimeQueue
+	delayedDeleteMessageHandler *DelayedDeleteMessageHandler
 }
 
 func createMocks(t *testing.T, config Config) *Mocks {
 	return &Mocks{
-		PrimaryDB:          OpenDbConnection(t, config.primaryDekanatDbDSN),
-		SecondaryDB:        OpenDbConnection(t, config.secondaryDekanatDbDSN),
-		TelegramMockServer: CreateTelegramMockServer(t, config.telegramToken),
-		KneuAuthMockServer: CreateKneuAuthMockServer(t, config.kneuClientId, config.kneuClientSecret),
-		RealtimeQueue:      CreateRealtimeQueue(t),
+		PrimaryDB:                   OpenDbConnection(t, config.primaryDekanatDbDSN),
+		SecondaryDB:                 OpenDbConnection(t, config.secondaryDekanatDbDSN),
+		TelegramMockServer:          CreateTelegramMockServer(t, config.telegramToken),
+		KneuAuthMockServer:          CreateKneuAuthMockServer(t, config.kneuClientId, config.kneuClientSecret),
+		RealtimeQueue:               CreateRealtimeQueue(t),
+		delayedDeleteMessageHandler: NewDelayedDeleteMessageHandler(),
 	}
 }

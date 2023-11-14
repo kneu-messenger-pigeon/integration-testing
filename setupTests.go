@@ -10,4 +10,5 @@ func setupTests(t *testing.T) {
 	t.Run("Test5BotDeactivatedByUser", Test5BotDeactivatedByUser)
 	t.Run("Test6RealtimeImportRegularGroup", Test6RealtimeImportRegularGroup)
 	t.Run("Test7RealtimeImportCustomGroup", Test7RealtimeImportCustomGroup)
+	t.Run("Test8DelayedDeleteWelcomeAnonMessages", Test8DelayedDeleteWelcomeAnonMessages)
 }

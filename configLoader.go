@@ -23,6 +23,7 @@ type Config struct {
 	kneuBaseUrl                        string
 	kneuClientId                       int
 	kneuClientSecret                   string
+	authStateLifetime                  time.Duration
 	publicUrl                          string
 	skipWait                           bool
 	debugUpdates                       bool
@@ -66,6 +67,11 @@ func loadConfig(envFilename string) (Config, error) {
 		repeatScoreChangesTimeframeSeconds = 5
 	}
 
+	authStateLifetime, err := time.ParseDuration(os.Getenv("AUTH_STATE_LIFETIME"))
+	if authStateLifetime < time.Second*10 {
+		return Config{}, errors.New(fmt.Sprintf("Wrong AUTH_STATE_LIFETIME %s", err))
+	}
+
 	loadedConfig := Config{
 		kafkaHost:                          os.Getenv("KAFKA_HOST"),
 		kafkaTimeout:                       time.Second * time.Duration(kafkaTimeout),
@@ -80,6 +86,7 @@ func loadConfig(envFilename string) (Config, error) {
 		kneuBaseUrl:                        os.Getenv("KNEU_BASE_URI"),
 		kneuClientId:                       kneuClientId,
 		kneuClientSecret:                   os.Getenv("KNEU_CLIENT_SECRET"),
+		authStateLifetime:                  authStateLifetime,
 		publicUrl:                          os.Getenv("PUBLIC_URL"),
 		skipWait:                           os.Getenv("SKIP_WAIT") == "true",
 		debugUpdates:                       os.Getenv("DEBUG_UPDATES") == "true",

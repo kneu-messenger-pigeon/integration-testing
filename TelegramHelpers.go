@@ -166,7 +166,7 @@ func captureNotMatchedSendMessage(chatId int) *mocha.Scoped {
 }
 
 func expectAuthorizationMessage(chatId int) *mocha.MockBuilder {
-	return mocha.Post(expect.URLPath("/sendMessage")).
+	mock := mocha.Post(expect.URLPath("/sendMessage")).
 		Repeat(1).
 		Body(
 			expectMarkdownV2, expectChatId(chatId),
@@ -175,6 +175,10 @@ func expectAuthorizationMessage(chatId int) *mocha.MockBuilder {
 			expectjson.JSONPathOptional("text", expect.ToMatchExpr(mocks.TelegramMockServer.authUrlRegexp)),
 		).
 		Reply(getSendMessageSuccessResponse())
+
+	mocks.delayedDeleteMessageHandler.AddMessage(chatId, sendMessageLastId, config.authStateLifetime)
+
+	return mock
 }
 
 func expectWelcomeMessage(chatId int) *mocha.MockBuilder {
