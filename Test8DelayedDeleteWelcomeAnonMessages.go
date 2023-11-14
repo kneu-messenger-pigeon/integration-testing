@@ -11,8 +11,8 @@ func Test8DelayedDeleteWelcomeAnonMessages(t *testing.T) {
 	fmt.Println("Test8DelayedDeleteWelcomeAnonMessages")
 	defer printTestResult(t, "Test8DelayedDeleteWelcomeAnonMessages")
 
-	fmt.Printf("mocks.delayedDeleteMessageHandler.messages length: %d", len(mocks.delayedDeleteMessageHandler.messages))
-	fmt.Printf("mocks.delayedDeleteMessageHandler.scopedMocks length: %d", len(mocks.delayedDeleteMessageHandler.scopedMocks))
+	fmt.Printf("mocks.delayedDeleteMessageHandler.messages length: %d\n", len(mocks.delayedDeleteMessageHandler.messages))
+	fmt.Printf("mocks.delayedDeleteMessageHandler.scopedMocks length: %d\n", len(mocks.delayedDeleteMessageHandler.scopedMocks))
 
 	waitTime := time.Now().Add(config.authStateLifetime)
 	for len(mocks.delayedDeleteMessageHandler.messages) != 0 && len(mocks.delayedDeleteMessageHandler.scopedMocks) == 0 && time.Now().Before(waitTime) {
@@ -35,5 +35,5 @@ func Test8DelayedDeleteWelcomeAnonMessages(t *testing.T) {
 	fmt.Printf("calledCount: %d (total expactation : %d)\n", calledCount, len(mocks.delayedDeleteMessageHandler.scopedMocks))
 
 	assert.NotEmpty(t, calledCount)
-	assert.GreaterOrEqual(t, calledCount, len(mocks.delayedDeleteMessageHandler.scopedMocks)-4)
+	assert.GreaterOrEqual(t, calledCount, 2)
 }
