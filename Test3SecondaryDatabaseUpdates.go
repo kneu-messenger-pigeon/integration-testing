@@ -56,7 +56,7 @@ func createScoresForTest3(
 }
 
 func Test3SecondaryDatabaseUpdates(t *testing.T) {
-	fmt.Println("Test3SecondaryDatabaseUpdates")
+	fmt.Println("➡️Test3SecondaryDatabaseUpdates")
 	defer printTestResult(t, "Test3SecondaryDatabaseUpdates")
 
 	if config.repeatScoreChangesTimeframeSeconds < time.Second*30 {

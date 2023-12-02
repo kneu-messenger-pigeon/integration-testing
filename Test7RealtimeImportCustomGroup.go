@@ -6,7 +6,7 @@ import (
 )
 
 func Test7RealtimeImportCustomGroup(t *testing.T) {
-	fmt.Println("Test7RealtimeImportCustomGroup")
+	fmt.Println("➡️Test7RealtimeImportCustomGroup")
 	defer printTestResult(t, "Test7RealtimeImportCustomGroup")
 
 	TestRealtimeImport(t,

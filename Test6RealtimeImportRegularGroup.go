@@ -6,7 +6,7 @@ import (
 )
 
 func Test6RealtimeImportRegularGroup(t *testing.T) {
-	fmt.Println("Test6RealtimeImportRegularGroup")
+	fmt.Println("➡️Test6RealtimeImportRegularGroup")
 	defer printTestResult(t, "Test6RealtimeImportRegularGroup")
 
 	TestRealtimeImport(t,

@@ -17,7 +17,7 @@ score 1 id 32788943
 */
 
 func Test4PhantomEdit(t *testing.T) {
-	fmt.Println("Test4PhantomEdit")
+	fmt.Println("➡️Test4PhantomEdit")
 	defer printTestResult(t, "Test4PhantomEdit")
 
 	startRegDate := time.Date(2023, 7, 6, 6, 0, 0, 0, time.UTC)

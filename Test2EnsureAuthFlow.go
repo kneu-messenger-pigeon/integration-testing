@@ -12,7 +12,7 @@ import (
 )
 
 func Test2EnsureAuthFlow(t *testing.T) {
-	fmt.Println("Test2EnsureAuthFlow")
+	fmt.Println("➡️Test2EnsureAuthFlow")
 	defer printTestResult(t, "Test2EnsureAuthFlow")
 
 	userId := test2AuthFlowUserId

@@ -8,7 +8,7 @@ import (
 )
 
 func Test8DelayedDeleteWelcomeAnonMessages(t *testing.T) {
-	fmt.Println("Test8DelayedDeleteWelcomeAnonMessages")
+	fmt.Println("➡️Test8DelayedDeleteWelcomeAnonMessages")
 	defer printTestResult(t, "Test8DelayedDeleteWelcomeAnonMessages")
 
 	fmt.Printf("mocks.delayedDeleteMessageHandler.messages length: %d\n", len(mocks.delayedDeleteMessageHandler.messages))

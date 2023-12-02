@@ -6,7 +6,7 @@ import (
 )
 
 func Test1AnonUserMessage(t *testing.T) {
-	fmt.Println("Test1AnonUserMessage")
+	fmt.Println("➡️Test1AnonUserMessage")
 	defer printTestResult(t, "Test1AnonUserMessage")
 
 	userId := test1LoginUserId

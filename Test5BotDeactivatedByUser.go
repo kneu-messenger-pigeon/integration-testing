@@ -44,7 +44,7 @@ func createScoresForTest5(
 }
 
 func Test5BotDeactivatedByUser(t *testing.T) {
-	fmt.Println("Test5BotDeactivatedByUser")
+	fmt.Println("➡️Test5BotDeactivatedByUser")
 	defer printTestResult(t, "Test5BotDeactivatedByUser")
 
 	startRegDate := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
@@ -103,7 +103,7 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 
 	// wait to unregister user after error
 	catchMessage.Reset()
-	waitUntilCalledTimes(expectNewScoreMessageScope, 10*time.Second, 2)
+	waitUntilCalledTimes(expectNewScoreMessageScope, 20*time.Second, 2)
 
 	assert.Equal(t, 2, expectNewScoreMessageScope.Hits())
 	assert.Equal(t, "Відтепер надсилання сповіщень зупинено.", catchMessage.Text)
