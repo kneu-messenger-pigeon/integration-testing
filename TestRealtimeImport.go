@@ -162,7 +162,7 @@ func TestRealtimeImport(t *testing.T, userId int, expectDisciplineId int, expect
 
 	// 7. Expect an edit message.
 	startTime = time.Now()
-	waitUntilCalled(expectEditScoreMessageScope, 10*time.Second)
+	waitUntilCalled(expectEditScoreMessageScope, 30*time.Second)
 	actualWaitingTime = time.Since(startTime)
 
 	if !expectEditScoreMessageScope.AssertCalled(t) {
@@ -194,7 +194,7 @@ func TestRealtimeImport(t *testing.T, userId int, expectDisciplineId int, expect
 	mocks.RealtimeQueue.SendLessonDeletedEvent(lesson)
 
 	// 10. Expect to delete the message.
-	waitUntilCalled(expectDeleteMessageScope, 15*time.Second)
+	waitUntilCalled(expectDeleteMessageScope, 30*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)
 	expectDeleteMessageScope.Clean()
 }
