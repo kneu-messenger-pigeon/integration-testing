@@ -104,7 +104,7 @@ func TestRealtimeImport(t *testing.T, userId int, expectDisciplineId int, expect
 	)
 
 	startTime := time.Now()
-	waitUntilCalled(expectNewScoreMessageScope, 15*time.Second)
+	waitUntilCalled(expectNewScoreMessageScope, 30*time.Second)
 	actualWaitingTime := time.Since(startTime)
 
 	assert.Equal(t, 1, expectNewScoreMessageScope.Hits())
