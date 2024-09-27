@@ -63,6 +63,17 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	catchMessage.Text = strings.Trim(catchMessage.Text, " \n")
 	lines := strings.Split(catchMessage.Text, "\n")
 
+	lastLineContent := "Цей Бот не є офіційним джерелом даних про успішність."
+
+	lastLineIndex := len(lines) - 1
+	for index, line := range lines {
+		// found last line in case if there is SupportInfo
+		if strings.Contains(line, lastLineContent) {
+			lastLineIndex = index
+		}
+	}
+	lines = lines[:lastLineIndex+1]
+
 	if !assert.GreaterOrEqual(t, len(lines), 5) {
 		return
 	}
@@ -75,7 +86,7 @@ func Test2EnsureAuthFlow(t *testing.T) {
 	assert.Equal(t, "Вимкнути бот - /reset", lines[len(lines)-5])
 	assert.Equal(t, "❗Увага❗", lines[len(lines)-3])
 	assert.Equal(t, "Перевіряйте оцінки в [офіційному журналі успішності КНЕУ](https://cutt.ly/Dekanat)", lines[len(lines)-2])
-	assert.Equal(t, "Цей Бот не є офіційним джерелом даних про успішність.", lines[len(lines)-1])
+	assert.Equal(t, lastLineContent, lines[len(lines)-1])
 
 	// 7. press discipline button
 	firstButton := catchMessage.GetInlineButton(0)
