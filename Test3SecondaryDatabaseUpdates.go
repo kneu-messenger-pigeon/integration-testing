@@ -16,6 +16,7 @@ func createScoresForTest3(
 	t *testing.T, fakeUser *FakeUser,
 	disciplineId int, lessonDate time.Time,
 	score1Value int, score2Value int,
+	dbUpdateTime time.Time,
 ) (score1Id int, score2Id int) {
 	lesson := &Lesson{
 		GroupId:      fakeUser.GroupId,
@@ -50,7 +51,7 @@ func createScoresForTest3(
 
 	fmt.Printf("Create lesson %d with two scores: %d and %d\n", lesson.LessonId, score1Id, score2Id)
 
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*4))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, dbUpdateTime)
 
 	return
 }
@@ -64,8 +65,9 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	}
 
 	firstDbUpdateTime := time.Date(2023, 7, 6, 0, 0, 0, 0, time.UTC)
-	secondDbUpdateTime := time.Date(2023, 7, 6, 5, 0, 0, 0, time.UTC)
+	secondDbUpdateTime := time.Date(2023, 7, 6, 6, 0, 0, 0, time.UTC)
 	thirdDbUpdateTime := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
+	fourthDbUpdateTime := time.Date(2023, 7, 6, 18, 0, 0, 0, time.UTC)
 
 	UpdateDbDatetime(t, mocks.SecondaryDB, firstDbUpdateTime)
 
@@ -121,7 +123,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	score1Value := 3
 	score2Value := 4
 	// 3. Update the database timestamp and wait X seconds
-	score1Id, score2Id := createScoresForTest3(t, fakeUser, expectDisciplineId, lessonDate, score1Value, score2Value)
+	score1Id, score2Id := createScoresForTest3(t, fakeUser, expectDisciplineId, lessonDate, score1Value, score2Value, thirdDbUpdateTime)
 
 	expectedText := fmt.Sprintf(
 		"Новий запис: %s, заняття %s _Зан.в дистанц.реж._: %d та %d",
@@ -219,7 +221,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	DeleteScore(t, mocks.SecondaryDB, score2Id, newRegTime)
 
 	// 9. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, thirdDbUpdateTime)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, fourthDbUpdateTime)
 
 	// 10. Expect to delete the message.
 	waitUntilCalled(expectDeleteMessageScope, 15*time.Second)

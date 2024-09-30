@@ -38,7 +38,7 @@ func createScoresForTest5(
 
 	fmt.Printf("Create lesson %d with score: %d\n", lesson.LessonId, score1Id)
 
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*1))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate)
 
 	return
 }
@@ -47,8 +47,10 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 	fmt.Println("➡️Test5BotDeactivatedByUser")
 	defer printTestResult(t, "Test5BotDeactivatedByUser")
 
-	startRegDate := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
-	UpdateDbDatetime(t, mocks.SecondaryDB, startRegDate)
+	initialRegDate := time.Date(2023, 7, 10, 6, 0, 0, 0, time.UTC)
+	firstDbUpdateTime := time.Date(2023, 7, 10, 12, 0, 0, 0, time.UTC)
+
+	UpdateDbDatetime(t, mocks.SecondaryDB, initialRegDate)
 
 	userId := Test5BotDeactivatedUserId
 	fakeUser := &FakeUser{
@@ -89,11 +91,11 @@ func Test5BotDeactivatedByUser(t *testing.T) {
 	expectDisciplineId := 198568
 
 	scoreValue := 3
-	createScoresForTest5(t, fakeUser, expectDisciplineId, startRegDate.Add(time.Minute*30), scoreValue)
+	createScoresForTest5(t, fakeUser, expectDisciplineId, firstDbUpdateTime, scoreValue)
 
 	expectedText := fmt.Sprintf(
 		"Новий запис: %s, заняття %s _Лабораторна роб._: %d",
-		expectDisciplineName, startRegDate.Format("02.01.2006"), 3,
+		expectDisciplineName, firstDbUpdateTime.Format("02.01.2006"), 3,
 	)
 
 	waitUntilCalled(expectNewScoreMessageScope, 10*time.Second)
