@@ -119,11 +119,12 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	// 2. push new records into the secondary
 	expectDisciplineName := "Нейрокомпʼютерні системи"
 	expectDisciplineId := 198568
-	lessonDate := time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC)
+	lessonDate := secondDbUpdateTime
+	lessonDate.Add(-10 * time.Minute)
 	score1Value := 3
 	score2Value := 4
 	// 3. Update the database timestamp and wait X seconds
-	score1Id, score2Id := createScoresForTest3(t, fakeUser, expectDisciplineId, lessonDate, score1Value, score2Value, thirdDbUpdateTime)
+	score1Id, score2Id := createScoresForTest3(t, fakeUser, expectDisciplineId, lessonDate, score1Value, score2Value, secondDbUpdateTime)
 
 	expectedText := fmt.Sprintf(
 		"Новий запис: %s, заняття %s _Зан.в дистанц.реж._: %d та %d",
@@ -181,11 +182,12 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 
 	// 5. Change scores in the secondary DB
 	catchMessage.Reset()
-	newRegTime := lessonDate.Add(time.Hour * 4)
+	newRegTime := thirdDbUpdateTime
+	newRegTime.Add(-10 * time.Minute)
 	editedScore1Value := 5
 	UpdateScore(t, mocks.SecondaryDB, score1Id, editedScore1Value, false, newRegTime)
 	// 6. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, secondDbUpdateTime)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, thirdDbUpdateTime)
 
 	fmt.Println("score1Id, score2Id", score1Id, score2Id)
 
@@ -216,7 +218,8 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	)
 	defer expectDeleteMessageScope.Clean()
 
-	newRegTime = newRegTime.Add(time.Hour * 4)
+	newRegTime = fourthDbUpdateTime
+	newRegTime.Add(-10 * time.Minute)
 	DeleteScore(t, mocks.SecondaryDB, score1Id, newRegTime)
 	DeleteScore(t, mocks.SecondaryDB, score2Id, newRegTime)
 
