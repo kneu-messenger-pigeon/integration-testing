@@ -20,7 +20,7 @@ func Test4PhantomEdit(t *testing.T) {
 	fmt.Println("➡️Test4PhantomEdit")
 	defer printTestResult(t, "Test4PhantomEdit")
 
-	startRegDate := time.Date(2023, 7, 6, 6, 0, 0, 0, time.UTC)
+	startRegDate := time.Date(2023, 7, 9, 10, 0, 0, 0, time.UTC)
 	UpdateDbDatetime(t, mocks.SecondaryDB, startRegDate)
 
 	userId := test4PhantomEditUserId
@@ -72,13 +72,14 @@ func Test4PhantomEdit(t *testing.T) {
 	)
 	defer expectEditScoreMessageScope.Clean()
 
-	regDate := startRegDate.Add(time.Minute * 30)
+	regDate := startRegDate
+	regDate.Add(time.Minute * 30)
 	newScore1Value := initialScore1Value + 1
 	newScore2Value := initialScore2Value + 2
 
 	UpdateScore(t, mocks.SecondaryDB, score1Id, newScore1Value, false, regDate)
 	UpdateScore(t, mocks.SecondaryDB, score2Id, newScore2Value, false, regDate)
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, startRegDate.Add(time.Hour))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, regDate)
 
 	expectedText := fmt.Sprintf(
 		"Змінено запис: Фахова іноземна мова, заняття 28.04.2023 _Зан.в дистанц.реж._: %d та %d (було ~%d та %d~)",
@@ -112,7 +113,7 @@ func Test4PhantomEdit(t *testing.T) {
 	regDate = startRegDate.Add(time.Minute * 90)
 	UpdateScore(t, mocks.SecondaryDB, score1Id, initialScore1Value, false, regDate)
 	UpdateScore(t, mocks.SecondaryDB, score2Id, initialScore2Value, false, regDate)
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, startRegDate.Add(time.Hour*2))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, regDate.Add(time.Hour*4))
 
 	waitUntilCalled(expectDeleteMessageScope, 10*time.Second)
 	expectDeleteMessageScope.AssertCalled(t)

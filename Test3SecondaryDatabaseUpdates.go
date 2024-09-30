@@ -50,7 +50,7 @@ func createScoresForTest3(
 
 	fmt.Printf("Create lesson %d with two scores: %d and %d\n", lesson.LessonId, score1Id, score2Id)
 
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*1))
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, lessonDate.Add(time.Hour*4))
 
 	return
 }
@@ -175,7 +175,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 
 	// 5. Change scores in the secondary DB
 	catchMessage.Reset()
-	newRegTime := lessonDate.Add(time.Hour * 2)
+	newRegTime := lessonDate.Add(time.Hour * 4)
 	editedScore1Value := 5
 	UpdateScore(t, mocks.SecondaryDB, score1Id, editedScore1Value, false, newRegTime)
 	// 6. Update the database timestamp and wait X seconds
@@ -210,9 +210,10 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	)
 	defer expectDeleteMessageScope.Clean()
 
-	newRegTime = newRegTime.Add(time.Hour * 3)
+	newRegTime = newRegTime.Add(time.Hour * 4)
 	DeleteScore(t, mocks.SecondaryDB, score1Id, newRegTime)
 	DeleteScore(t, mocks.SecondaryDB, score2Id, newRegTime)
+
 	// 9. Update the database timestamp and wait X seconds
 	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, newRegTime)
 
