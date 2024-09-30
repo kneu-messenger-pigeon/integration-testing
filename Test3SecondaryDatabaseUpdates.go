@@ -63,7 +63,11 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 		fmt.Println("Warning! Too small repeatScoreChangesTimeframeSeconds < 30 seconds")
 	}
 
-	UpdateDbDatetime(t, mocks.SecondaryDB, time.Date(2023, 7, 6, 0, 0, 0, 0, time.UTC))
+	firstDbUpdateTime := time.Date(2023, 7, 6, 0, 0, 0, 0, time.UTC)
+	secondDbUpdateTime := time.Date(2023, 7, 6, 5, 0, 0, 0, time.UTC)
+	thirdDbUpdateTime := time.Date(2023, 7, 6, 12, 0, 0, 0, time.UTC)
+
+	UpdateDbDatetime(t, mocks.SecondaryDB, firstDbUpdateTime)
 
 	userId := test3SecondaryDatabaseUserId
 	fakeUser := &FakeUser{
@@ -179,7 +183,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	editedScore1Value := 5
 	UpdateScore(t, mocks.SecondaryDB, score1Id, editedScore1Value, false, newRegTime)
 	// 6. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, newRegTime)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, secondDbUpdateTime)
 
 	fmt.Println("score1Id, score2Id", score1Id, score2Id)
 
@@ -215,7 +219,7 @@ func Test3SecondaryDatabaseUpdates(t *testing.T) {
 	DeleteScore(t, mocks.SecondaryDB, score2Id, newRegTime)
 
 	// 9. Update the database timestamp and wait X seconds
-	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, newRegTime)
+	UpdateDbDatetimeAndWait(t, mocks.SecondaryDB, thirdDbUpdateTime)
 
 	// 10. Expect to delete the message.
 	waitUntilCalled(expectDeleteMessageScope, 15*time.Second)
