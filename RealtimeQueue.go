@@ -40,6 +40,16 @@ func CreateRealtimeQueue(t *testing.T) *RealtimeQueue {
 
 	client := sqs.NewFromConfig(awsCfg)
 
+	_, err = client.PurgeQueue(context.Background(), &sqs.PurgeQueueInput{
+		QueueUrl: &config.sqsQueueUrl,
+	})
+
+	if err != nil {
+		fmt.Printf("PurgeQueue failed: %s\n", err)
+	} else {
+		fmt.Printf("Purged success:\n")
+	}
+
 	return &RealtimeQueue{
 		client:      client,
 		sqsQueueUrl: &config.sqsQueueUrl,
