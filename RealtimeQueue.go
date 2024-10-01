@@ -45,9 +45,9 @@ func CreateRealtimeQueue(t *testing.T) *RealtimeQueue {
 	})
 
 	if err != nil {
-		fmt.Printf("PurgeQueue failed: %s\n", err)
+		fmt.Printf("SQS queue for realtime events purged failed: %s\n", err)
 	} else {
-		fmt.Printf("Purged success:\n")
+		fmt.Printf("SQS queue for realtime events purged success\n")
 	}
 
 	return &RealtimeQueue{
